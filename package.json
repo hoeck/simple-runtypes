@@ -21,9 +21,9 @@
   },
   "prettier": {
     "printWidth": 80,
-    "semi": true,
+    "semi": false,
     "singleQuote": true,
-    "trailingComma": "es5"
+    "trailingComma": "all"
   },
   "devDependencies": {
     "@types/jest": "^24.0.18",
