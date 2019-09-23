@@ -1,8 +1,14 @@
 /// infrastructure
 
-// context variable: the current processed key in object to provide better error messages
+// context variables:
+
+// the current processed key in object to provide better error messages
 let _currentKey: string | undefined
 
+// required when processing records that are part of an intersection
+let _skipUnknownKeyCheck: boolean | undefined
+
+// current key accessor
 function currentKey() {
   if (!_currentKey) {
     return ''
@@ -52,6 +58,8 @@ export interface RecordRuntype<T> extends Runtype<T> {
   // keys which are constant in case that T is a record type to help
   // identifying the correct function for a discriminatedUnion type
   constants: { [key: string]: string | number }
+
+  // TODO: might as well put the type-info of all keys here for introspection
 }
 
 /// basic types
@@ -257,19 +265,27 @@ export function record<T extends object>(
     (v: unknown) => {
       const o: any = objectRuntype(v)
       const res = {} as T
+
+      // context vars
       const currentKey = _currentKey
+      const skipUnknownKeyCheck = _skipUnknownKeyCheck
+
+      // this context var is only valid for the record contained in intersection
+      _skipUnknownKeyCheck = undefined
 
       for (const k in typemap) {
         _currentKey = k
         res[k] = typemap[k](o[k])
       }
-
       _currentKey = currentKey
+      _skipUnknownKeyCheck = skipUnknownKeyCheck
 
-      const unknownKeys = Object.keys(o).filter(k => !res.hasOwnProperty(k))
+      if (!_skipUnknownKeyCheck) {
+        const unknownKeys = Object.keys(o).filter(k => !res.hasOwnProperty(k))
 
-      if (unknownKeys.length) {
-        throw createError('invalid keys in record', unknownKeys)
+        if (unknownKeys.length) {
+          throw createError('invalid keys in record', unknownKeys)
+        }
       }
 
       return res
@@ -450,10 +466,33 @@ export function discriminatedUnion(
   }
 }
 
-// TODO: extends(record, record)
-// export function intersection<A, B>(
-//   recordA: RecordRuntype<A>,
-//   recordB: RecordRuntype<B>,
-// ): Runtype<A & B> {
-//
-// }
+/**
+ * An intersection of two records.
+ */
+export function intersection<A, B>(
+  recordA: RecordRuntype<A>,
+  recordB: RecordRuntype<B>,
+): Runtype<A & B> {
+  return v => {
+    const o = objectRuntype(v)
+    const skipUnknownKeyCheck = _skipUnknownKeyCheck
+
+    _skipUnknownKeyCheck = true
+
+    const res = Object.assign(recordA(o), recordB(o))
+
+    _skipUnknownKeyCheck = skipUnknownKeyCheck
+
+    if (!_skipUnknownKeyCheck) {
+      const unknownKeys = Object.keys(o).filter(k => {
+        return typeof res === 'object' && !(res as any).hasOwnProperty(k)
+      })
+
+      if (unknownKeys.length) {
+        throw createError('invalid keys in record', unknownKeys)
+      }
+    }
+
+    return res
+  }
+}
