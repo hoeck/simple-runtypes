@@ -221,18 +221,27 @@ export function array(): Runtype<unknown[]> {
 /**
  * A tuple.
  */
-export function tuple<A>(t: [Runtype<A>]): Runtype<[A]>
-export function tuple<A, B>(t: [Runtype<A>, Runtype<B>]): Runtype<[A, B]>
+export function tuple<A>(a: Runtype<A>): Runtype<[A]>
+export function tuple<A, B>(a: Runtype<A>, b: Runtype<B>): Runtype<[A, B]>
 export function tuple<A, B, C>(
-  t: [Runtype<A>, Runtype<B>, Runtype<C>],
+  a: Runtype<A>,
+  b: Runtype<B>,
+  c: Runtype<C>,
 ): Runtype<[A, B, C]>
 export function tuple<A, B, C, D>(
-  t: [Runtype<A>, Runtype<B>, Runtype<C>, Runtype<D>],
+  a: Runtype<A>,
+  b: Runtype<B>,
+  c: Runtype<C>,
+  d: Runtype<D>,
 ): Runtype<[A, B, C, D]>
 export function tuple<A, B, C, D, E>(
-  t: [Runtype<A>, Runtype<B>, Runtype<C>, Runtype<D>, Runtype<E>],
+  a: Runtype<A>,
+  b: Runtype<B>,
+  c: Runtype<C>,
+  d: Runtype<D>,
+  e: Runtype<E>,
 ): Runtype<[A, B, C, D, E]>
-export function tuple(types: Runtype<any>[]): any {
+export function tuple(...types: Runtype<any>[]): any {
   return (v: unknown) => {
     const a = arrayRuntype(v)
 

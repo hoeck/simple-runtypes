@@ -158,6 +158,24 @@ describe('enumValue', () => {
   })
 })
 
+describe('tuple', () => {
+  it('accepts tuples', () => {
+    const runtype = sr.tuple(sr.number(), sr.string(), sr.boolean())
+
+    expectAcceptValues(runtype, [[1, 'foo', true], [2, 'bar', false]])
+  })
+
+  it('rejects invalid values', () => {
+    const runtype = sr.tuple(sr.number(), sr.string(), sr.boolean())
+
+    expectRejectValues(
+      runtype,
+      [[1, 'foo', null], [], undefined, null, [2, 'bar'], 'asd', NaN],
+      /(expected a boolean)|(expected a number)|(expected an Array)/,
+    )
+  })
+})
+
 describe('record', () => {
   it('accepts simple records', () => {
     const runType = sr.record({
