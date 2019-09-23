@@ -286,3 +286,43 @@ describe('discriminatedUnion', () => {
     )
   })
 })
+
+describe('intersection', () => {
+  const recordA = sr.record({
+    a: sr.number(),
+    b: sr.optional(sr.string()),
+  })
+
+  const recordB = sr.record({
+    c: sr.boolean(),
+  })
+
+  it('should accept intersected records', () => {
+    const runtype = sr.intersection(recordA, recordB)
+
+    expectAcceptValues(runtype, [
+      { c: true, b: 'foo', a: 1 },
+      { c: false, a: 2 },
+      { c: false, b: undefined, a: 3 },
+    ])
+  })
+
+  it('should reject invalid', () => {
+    const runtype = sr.intersection(recordA, recordB)
+
+    expectRejectValues(
+      runtype,
+      [
+        { c: true, b: 'foo', a: 1, d: [] },
+        { c: true, b: 'foo', a: 'bar' },
+        { b: 'foo', a: 1 },
+        [],
+        null,
+        undefined,
+        NaN,
+        99,
+      ],
+      /(invalid key)|(expected a number)|(expected a boolean)|(expected an object)/,
+    )
+  })
+})
