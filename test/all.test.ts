@@ -11,10 +11,10 @@ function expectAcceptValues<T>(rt: sr.Runtype<T>, values: unknown[]) {
 function expectRejectValues<T>(
   rt: sr.Runtype<T>,
   values: unknown[],
-  error: string | RegExp,
+  error?: string | RegExp,
 ) {
   values.forEach(v => {
-    expect(() => rt(v)).toThrow(error)
+    expect(() => rt(v)).toThrow(error || /.*/)
   })
 }
 
@@ -165,14 +165,107 @@ describe('tuple', () => {
     expectAcceptValues(runtype, [[1, 'foo', true], [2, 'bar', false]])
   })
 
+  it('always returns a new Array', () => {
+    const runtype = sr.tuple(sr.number(), sr.string(), sr.boolean())
+
+    const input = [1, 'foo', false]
+    const value = runtype(input)
+
+    expect(value).not.toBe(input)
+  })
+
   it('rejects invalid values', () => {
     const runtype = sr.tuple(sr.number(), sr.string(), sr.boolean())
 
-    expectRejectValues(
-      runtype,
-      [[1, 'foo', null], [], undefined, null, [2, 'bar'], 'asd', NaN],
-      /(expected a boolean)|(expected a number)|(expected an Array)/,
-    )
+    expectRejectValues(runtype, [
+      [1, 'foo', null],
+      [],
+      undefined,
+      null,
+      [2, 'bar'],
+      'asd',
+      NaN,
+    ])
+  })
+})
+
+describe('stringIndex', () => {
+  it('accepts string keyed objects', () => {
+    const runtype = sr.stringIndex(sr.number())
+
+    expectAcceptValues(runtype, [{ a: 1, b: 2 }, { a: 1 }, { 1: 1 }, {}])
+  })
+
+  it('always returns a new object', () => {
+    const runtype = sr.stringIndex(sr.number())
+
+    const input = {}
+    const value = runtype(input)
+
+    expect(value).not.toBe(input)
+  })
+
+  it('rejects non-string keyed objects', () => {
+    const runtype = sr.stringIndex(sr.number())
+
+    expectRejectValues(runtype, [
+      undefined,
+      null,
+      0,
+      '',
+      false,
+      'asd',
+      [1, 2, 3],
+      { 1: null },
+      {
+        foo() {
+          return 1
+        },
+      },
+    ])
+
+    // symbol keys are ignored
+    expect(runtype({ [Symbol()]: 10 })).toEqual({})
+  })
+})
+
+describe('numberIndex', () => {
+  it('accepts string keyed objects', () => {
+    const runtype = sr.numberIndex(sr.number())
+
+    expectAcceptValues(runtype, [{ 1: 100 }, { 100: 22, 101: 25 }, {}])
+  })
+
+  it('always returns a new object', () => {
+    const runtype = sr.numberIndex(sr.number())
+
+    const input = {}
+    const value = runtype(input)
+
+    expect(value).not.toBe(input)
+  })
+
+  it('rejects non-string keyed objects', () => {
+    const runtype = sr.stringIndex(sr.number())
+
+    expectRejectValues(runtype, [
+      undefined,
+      null,
+      0,
+      '',
+      false,
+      'asd',
+      [1, 2, 3],
+      { 1: null },
+      {
+        foo() {
+          return 1
+        },
+      },
+    ])
+
+    // symbol keys are ignored
+    expect(runtype({ [Symbol()]: 10 })).toEqual({})
   })
 })
 
@@ -186,6 +279,18 @@ describe('record', () => {
     const value: { a: number; b: string } = runType({ a: 0, b: 'foo' })
 
     expect(value).toEqual({ a: 0, b: 'foo' })
+  })
+
+  it('always returns a new object', () => {
+    const runType = sr.record({
+      a: sr.integer(),
+      b: sr.string(),
+    })
+
+    const input = { a: 0, b: 'foo' }
+    const value: { a: number; b: string } = runType(input)
+
+    expect(value).not.toBe(input)
   })
 
   it('accepts empty records', () => {
@@ -287,21 +392,17 @@ describe('discriminatedUnion', () => {
       runtypeC,
     )
 
-    expectRejectValues(
-      runtypeUnion,
-      [
-        { tag: 'x_tag', id: 123 },
-        { tag: 'b_tag', name: [] },
-        99,
-        NaN,
-        undefined,
-        null,
-        { tag: 'a_tag' },
-        [],
-        'foo',
-      ],
-      /(no Runtype found for discriminated union)|(expected a string)|(expected an object)|(expected a number)/,
-    )
+    expectRejectValues(runtypeUnion, [
+      { tag: 'x_tag', id: 123 },
+      { tag: 'b_tag', name: [] },
+      99,
+      NaN,
+      undefined,
+      null,
+      { tag: 'a_tag' },
+      [],
+      'foo',
+    ])
   })
 })
 
@@ -328,19 +429,15 @@ describe('intersection', () => {
   it('should reject invalid', () => {
     const runtype = sr.intersection(recordA, recordB)
 
-    expectRejectValues(
-      runtype,
-      [
-        { c: true, b: 'foo', a: 1, d: [] },
-        { c: true, b: 'foo', a: 'bar' },
-        { b: 'foo', a: 1 },
-        [],
-        null,
-        undefined,
-        NaN,
-        99,
-      ],
-      /(invalid key)|(expected a number)|(expected a boolean)|(expected an object)/,
-    )
+    expectRejectValues(runtype, [
+      { c: true, b: 'foo', a: 1, d: [] },
+      { c: true, b: 'foo', a: 'bar' },
+      { b: 'foo', a: 1 },
+      [],
+      null,
+      undefined,
+      NaN,
+      99,
+    ])
   })
 })

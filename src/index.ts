@@ -249,6 +249,7 @@ export function tuple(...types: Runtype<any>[]): any {
   }
 }
 
+// cached object runtype
 export function objectRuntype(v: unknown) {
   if (typeof v === 'object' && !Array.isArray(v) && v !== null) {
     return v
@@ -265,6 +266,42 @@ export function object(): Runtype<object> {
 }
 
 /**
+ * An index with string keys.
+ */
+export function stringIndex<T>(t: Runtype<T>): Runtype<{ [key: string]: T }> {
+  return v => {
+    const o: any = objectRuntype(v)
+    const res: { [key: string]: T } = {}
+
+    for (let k in o) {
+      res[k] = t(o[k])
+    }
+
+    return res
+  }
+}
+
+/**
+ * An index with number keys.
+ */
+export function numberIndex<T>(t: Runtype<T>): Runtype<{ [key: number]: T }> {
+  return v => {
+    const o: any = objectRuntype(v)
+    const res: { [key: number]: T } = {}
+
+    for (let k in o) {
+      if (isNaN(k as any)) {
+        throw createError('expected a number key', k)
+      }
+
+      res[k as any] = t(o[k])
+    }
+
+    return res
+  }
+}
+
+/**
  * An object with defined keys and values.
  */
 export function record<T extends object>(
@@ -273,6 +310,9 @@ export function record<T extends object>(
   const rt: RecordRuntype<T> = Object.assign(
     (v: unknown) => {
       const o: any = objectRuntype(v)
+
+      // TODO: optimize allocations: only create a copy if any of the key
+      // runtypes return a different object - otherwise return value as is
       const res = {} as T
 
       // context vars
@@ -312,8 +352,6 @@ export function record<T extends object>(
 
   return rt
 }
-
-/// combinators
 
 /**
  * Optional (?)
