@@ -1,7 +1,9 @@
 {
   "name": "simple-runtypes",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "license": "MIT",
+  "author": "Erik Söhnel",
+  "repository": "github:hoeck/simple-runtypes",
   "main": "dist/index.js",
   "module": "dist/simple-runtypes.esm.js",
   "typings": "dist/index.d.ts",
