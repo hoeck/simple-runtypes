@@ -162,7 +162,10 @@ describe('tuple', () => {
   it('accepts tuples', () => {
     const runtype = sr.tuple(sr.number(), sr.string(), sr.boolean())
 
-    expectAcceptValues(runtype, [[1, 'foo', true], [2, 'bar', false]])
+    expectAcceptValues(runtype, [
+      [1, 'foo', true],
+      [2, 'bar', false],
+    ])
   })
 
   it('always returns a new Array', () => {
@@ -178,6 +181,7 @@ describe('tuple', () => {
     const runtype = sr.tuple(sr.number(), sr.string(), sr.boolean())
 
     expectRejectValues(runtype, [
+      [1, 'foo', true, 'too-long'],
       [1, 'foo', null],
       [],
       undefined,

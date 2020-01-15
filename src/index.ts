@@ -245,6 +245,10 @@ export function tuple(...types: Runtype<any>[]): any {
   return (v: unknown) => {
     const a = arrayRuntype(v)
 
+    if (a.length !== types.length) {
+      throw createError('array does not have the required length', v)
+    }
+
     return types.map((t, i) => t(a[i]))
   }
 }
