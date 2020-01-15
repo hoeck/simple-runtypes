@@ -158,6 +158,20 @@ describe('enumValue', () => {
   })
 })
 
+describe('array', () => {
+  it('accepts valid arrays', () => {
+    const runtype = sr.array(sr.number())
+
+    expectAcceptValues(runtype, [[], [1], [1, 2, 3]])
+  })
+
+  it('rejects invalid values and arrays', () => {
+    const runtype = sr.array(sr.number())
+
+    expectRejectValues(runtype, [undefined, null, ['asd'], [undefined, 1], '1'])
+  })
+})
+
 describe('tuple', () => {
   it('accepts tuples', () => {
     const runtype = sr.tuple(sr.number(), sr.string(), sr.boolean())
