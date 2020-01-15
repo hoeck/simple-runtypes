@@ -214,8 +214,12 @@ export function arrayRuntype(v: unknown) {
 /**
  * An array.
  */
-export function array(): Runtype<unknown[]> {
-  return arrayRuntype
+export function array<A>(a: Runtype<A>): Runtype<A[]> {
+  return (v: unknown) => {
+    const arrayValue = arrayRuntype(v)
+
+    return arrayValue.map(a)
+  }
 }
 
 /**
