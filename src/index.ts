@@ -83,21 +83,47 @@ export function number(allowNaN: boolean = false): Runtype<number> {
   }
 }
 
+export function integerRuntype(v: unknown) {
+  if (
+    typeof v === 'number' &&
+    Number.isInteger(v) &&
+    -Number.MAX_SAFE_INTEGER <= v &&
+    v <= Number.MAX_SAFE_INTEGER
+  ) {
+    return v
+  }
+
+  throw createError('expected an integer', v)
+}
+
 /**
  * A number without decimals and within +-MAX_SAFE_INTEGER.
  */
 export function integer(): Runtype<number> {
-  return (v: unknown) => {
-    if (
-      typeof v === 'number' &&
-      Number.isInteger(v) &&
-      -Number.MAX_SAFE_INTEGER <= v &&
-      v <= Number.MAX_SAFE_INTEGER
-    ) {
-      return v
+  return integerRuntype
+}
+
+/**
+ * A string that contains an integer.
+ */
+export function stringAsInteger(): Runtype<number> {
+  return (v: unknown): number => {
+    if (typeof v === 'string') {
+      const parsedNumber = parseInt(v, 10)
+      const n = integerRuntype(parsedNumber)
+
+      // ensure that value did only contain that integer, nothing else
+      if (n.toString() !== v) {
+        throw createError(
+          'expected string to contain only the integer, not additional characters',
+          v,
+        )
+      }
+
+      return n
     }
 
-    throw createError('expected an integer', v)
+    throw createError('expected a string that contains an integer', v)
   }
 }
 

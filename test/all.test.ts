@@ -39,6 +39,7 @@ describe('integer', () => {
     expectAcceptValues(sr.integer(), [
       1,
       2,
+      -23,
       0,
       123456789,
       Number.MAX_SAFE_INTEGER,
@@ -51,6 +52,47 @@ describe('integer', () => {
       sr.integer(),
       [NaN, 1.1, 0.0001, Infinity, '123', [], undefined, null, { a: 1 }],
       'expected an integer',
+    )
+  })
+})
+
+describe('stringAsInteger', () => {
+  it('accepts integers in strings', () => {
+    const values = [
+      '1',
+      '2',
+      '0',
+      '123456789',
+      `${Number.MAX_SAFE_INTEGER}`,
+      `${-Number.MAX_SAFE_INTEGER}`,
+    ]
+
+    values.forEach(v => {
+      expect(sr.stringAsInteger()(v)).toEqual(parseInt(v, 10))
+    })
+  })
+
+  it('rejects non string objects', () => {
+    expectRejectValues(
+      sr.stringAsInteger(),
+      [NaN, 1.1, 0.0001, Infinity, [], undefined, null, { a: 1 }],
+      'expected a string that contains an integer',
+    )
+  })
+
+  it('rejects string that do not contain an integer', () => {
+    expectRejectValues(
+      sr.stringAsInteger(),
+      ['NaN', 'Infinity', '{"asd": "f"}', '[]'],
+      'expected an integer',
+    )
+  })
+
+  it('rejects strings that contain additional trailing or leading characters', () => {
+    expectRejectValues(
+      sr.stringAsInteger(),
+      ['123asd', '0000', '01', '-123,33', '33.44', '3e15'],
+      'expected string to contain only the integer, not additional characters',
     )
   })
 })
