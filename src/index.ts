@@ -227,6 +227,59 @@ export function enumValue<T extends EnumObject, S extends keyof T>(
   }
 }
 
+/**
+ * A union of string literals.
+ */
+export function stringLiteralUnion<A extends string>(a: A): Runtype<A>
+export function stringLiteralUnion<A extends string, B extends string>(
+  a: A,
+  b: B,
+): Runtype<A | B>
+export function stringLiteralUnion<
+  A extends string,
+  B extends string,
+  C extends string
+>(a: A, b: B, c: C): Runtype<A | B | C>
+export function stringLiteralUnion<
+  A extends string,
+  B extends string,
+  C extends string,
+  D extends string
+>(a: A, b: B, c: C, d: D): Runtype<A | B | C | D>
+export function stringLiteralUnion<
+  A extends string,
+  B extends string,
+  C extends string,
+  D extends string,
+  E extends string
+>(a: A, b: B, c: C, d: D, e: E): Runtype<A | B | C | D | E>
+export function stringLiteralUnion<
+  A extends string,
+  B extends string,
+  C extends string,
+  D extends string,
+  E extends string,
+  F extends string
+>(a: A, b: B, c: C, d: D, e: E, f: F): Runtype<A | B | C | D | E | F>
+export function stringLiteralUnion<
+  A extends string,
+  B extends string,
+  C extends string,
+  D extends string,
+  E extends string,
+  F extends string,
+  G extends string
+>(a: A, b: B, c: C, d: D, e: E, f: F, g: G): Runtype<A | B | C | D | E | F | G>
+export function stringLiteralUnion(...values: string[]): any {
+  return (v: unknown) => {
+    if (typeof v !== 'string' || !values.includes(v)) {
+      throw createError(`expected one of ${values}`, v)
+    }
+
+    return v
+  }
+}
+
 /// containers
 
 export function arrayRuntype(v: unknown) {
@@ -385,6 +438,19 @@ export function record<T extends object>(
   }
 
   return rt
+}
+
+/**
+ * A runtype based on a type guard
+ */
+export function guardedBy<F>(typeGuard: (v: unknown) => v is F): Runtype<F> {
+  return (v: unknown) => {
+    if (!typeGuard(v)) {
+      throw createError('expected typeguard to return true', v)
+    }
+
+    return v
+  }
 }
 
 /**

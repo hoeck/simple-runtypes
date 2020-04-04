@@ -200,6 +200,49 @@ describe('enumValue', () => {
   })
 })
 
+describe('stringLiteralUnion', () => {
+  it('accepts one out of a set of literal strings', () => {
+    const runtype = sr.stringLiteralUnion('a', 'b', 'c')
+
+    expectAcceptValues(runtype, ['c', 'a', 'b'])
+  })
+
+  it('accepts single literal string unions', () => {
+    const runtype = sr.stringLiteralUnion('x')
+
+    expectAcceptValues(runtype, ['x'])
+  })
+
+  it('rejects all values that are not in the literal strings', () => {
+    const runtype = sr.stringLiteralUnion('a', 'b', 'c')
+
+    expectRejectValues(runtype, [
+      'x',
+      [],
+      undefined,
+      null,
+      '',
+      'abc',
+      {},
+      new Date(),
+      ['a'],
+    ])
+  })
+})
+
+describe('guardedBy', () => {
+  const guard = (v: unknown): v is string => typeof v === 'string'
+  const runtype = sr.guardedBy(guard)
+
+  it('accepts valid values', () => {
+    expectAcceptValues(runtype, ['a', 'aa', ''])
+  })
+
+  it('rejects invalid values', () => {
+    expectRejectValues(runtype, [null, undefined, 0, [], {}])
+  })
+})
+
 describe('array', () => {
   it('accepts valid arrays', () => {
     const runtype = sr.array(sr.number())
