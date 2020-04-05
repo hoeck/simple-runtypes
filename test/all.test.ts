@@ -18,6 +18,32 @@ function expectRejectValues<T>(
   })
 }
 
+// properties defined on all js objects,
+// need ensure that we're not silently accepting them anywhere
+const objectAttributes = [
+  '__defineGetter__',
+  '__defineSetter__',
+  '__lookupGetter__',
+  '__lookupSetter__',
+  '__proto__',
+  'constructor',
+  'hasOwnProperty',
+  'isPrototypeOf',
+  'propertyIsEnumerable',
+  'toLocaleString',
+  'toString',
+  'valueOf',
+]
+
+function expectRejectObjectAttributes(
+  rt: sr.Runtype<any>,
+  error?: string | RegExp,
+) {
+  objectAttributes.forEach(a => {
+    expect(() => rt(a)).toThrow(error || /.*/)
+  })
+}
+
 /// tests
 
 describe('number', () => {
@@ -50,7 +76,19 @@ describe('integer', () => {
   it('rejects non-integers', () => {
     expectRejectValues(
       sr.integer(),
-      [NaN, 1.1, 0.0001, Infinity, '123', [], undefined, null, { a: 1 }],
+      [
+        NaN,
+        1.1,
+        0.0001,
+        Infinity,
+        '123',
+        [],
+        undefined,
+        null,
+        { a: 1 },
+        Number.MAX_SAFE_INTEGER + 1,
+        -Number.MAX_SAFE_INTEGER - 1,
+      ],
       'expected an integer',
     )
   })
@@ -197,6 +235,9 @@ describe('enumValue', () => {
 
     expectRejectValues(numericEnum, values, 'expected a value')
     expectRejectValues(stringEnum, values, 'expected a value')
+
+    expectRejectObjectAttributes(numericEnum, 'expected a value')
+    expectRejectObjectAttributes(stringEnum, 'expected a value')
   })
 })
 
@@ -227,6 +268,7 @@ describe('stringLiteralUnion', () => {
       new Date(),
       ['a'],
     ])
+    expectRejectObjectAttributes(runtype)
   })
 })
 
@@ -429,6 +471,18 @@ describe('record', () => {
       runType({ a: 1, b: 'foo', c: 'not-in-record-definition' }),
     ).toThrow('invalid keys in record')
   })
+
+  it('rejects records with object attributes', () => {
+    const runType = sr.record({
+      x: sr.number(),
+    })
+
+    expectRejectValues(
+      runType,
+      // JSON.parse bc the __proto__ attr cannot be assigned in js
+      objectAttributes.map(a => JSON.parse(`{"x": 1, "${a}": "x"}`)),
+    )
+  })
 })
 
 describe('discriminatedUnion', () => {
@@ -506,6 +560,20 @@ describe('discriminatedUnion', () => {
       [],
       'foo',
     ])
+  })
+
+  it('should reject object property names as tags', () => {
+    const runtypeUnion = sr.discriminatedUnion(
+      'key',
+      sr.record({ key: sr.literal('a'), value: sr.string() }),
+      sr.record({ key: sr.literal('b'), value: sr.string() }),
+    )
+
+    expectRejectValues(
+      runtypeUnion,
+      // JSON parse bc you cant assign to the __proto__ key, but with json it works
+      objectAttributes.map(a => JSON.parse(`{"key": "${a}", "value": "asd"}`)),
+    )
   })
 })
 

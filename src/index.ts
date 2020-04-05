@@ -577,7 +577,7 @@ export function discriminatedUnion(
 ): Runtype<any> {
   const key = args[0]
   const runtypes = args.slice(1)
-  const typeMap: any = {}
+  const typeMap = new Map<string | number, Runtype<any>>()
 
   runtypes.forEach(t => {
     const tagValue = t.constants[key]
@@ -592,13 +592,13 @@ export function discriminatedUnion(
 
     // use `object` to also allow enums but they can't be used in types
     // for keys of indexes so we need any
-    typeMap[tagValue as any] = t
+    typeMap.set(tagValue, t)
   })
 
   return (v: unknown) => {
     const o: any = objectRuntype(v)
     const tagValue = o[key]
-    const rt = typeMap[tagValue]
+    const rt = typeMap.get(tagValue)
 
     if (rt === undefined) {
       throw createError(
