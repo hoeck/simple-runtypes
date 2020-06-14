@@ -3,7 +3,7 @@ import * as sr from '../src'
 /// helpers
 
 function expectAcceptValues<T>(rt: sr.Runtype<T>, values: unknown[]) {
-  values.forEach(v => {
+  values.forEach((v) => {
     expect(rt(v)).toEqual(v)
   })
 }
@@ -13,7 +13,7 @@ function expectRejectValues<T>(
   values: unknown[],
   error?: string | RegExp,
 ) {
-  values.forEach(v => {
+  values.forEach((v) => {
     expect(() => rt(v)).toThrow(error || /.*/)
   })
 }
@@ -39,7 +39,7 @@ function expectRejectObjectAttributes(
   rt: sr.Runtype<any>,
   error?: string | RegExp,
 ) {
-  objectAttributes.forEach(a => {
+  objectAttributes.forEach((a) => {
     expect(() => rt(a)).toThrow(error || /.*/)
   })
 }
@@ -105,7 +105,7 @@ describe('stringAsInteger', () => {
       `${-Number.MAX_SAFE_INTEGER}`,
     ]
 
-    values.forEach(v => {
+    values.forEach((v) => {
       expect(sr.stringAsInteger()(v)).toEqual(parseInt(v, 10))
     })
   })
@@ -480,7 +480,7 @@ describe('record', () => {
     expectRejectValues(
       runType,
       // JSON.parse bc the __proto__ attr cannot be assigned in js
-      objectAttributes.map(a => JSON.parse(`{"x": 1, "${a}": "x"}`)),
+      objectAttributes.map((a) => JSON.parse(`{"x": 1, "${a}": "x"}`)),
     )
   })
 })
@@ -572,7 +572,9 @@ describe('discriminatedUnion', () => {
     expectRejectValues(
       runtypeUnion,
       // JSON parse bc you cant assign to the __proto__ key, but with json it works
-      objectAttributes.map(a => JSON.parse(`{"key": "${a}", "value": "asd"}`)),
+      objectAttributes.map((a) =>
+        JSON.parse(`{"key": "${a}", "value": "asd"}`),
+      ),
     )
   })
 })
@@ -610,5 +612,44 @@ describe('intersection', () => {
       NaN,
       99,
     ])
+  })
+})
+
+describe('pick & omit', () => {
+  const record = sr.record({
+    a: sr.number(),
+    b: sr.optional(sr.string()),
+    c: sr.boolean(),
+  })
+
+  const pickedRt = sr.pick(record, 'a', 'b')
+  const omittedRt = sr.omit(record, 'c')
+
+  it('should select some fields', () => {
+    const acceptedValues = [
+      { a: 1 },
+      { a: 2, b: undefined },
+      { a: 3, b: 'abc' },
+    ]
+
+    expectAcceptValues(pickedRt, acceptedValues)
+    expectAcceptValues(omittedRt, acceptedValues)
+  })
+
+  it('should reject omitted/non-picked fields', () => {
+    const rejectedValues = [
+      { c: true, a: 1 },
+      { c: false, a: 2, b: undefined },
+      { c: false, a: 3, b: 'abc' },
+      { a: 'string', b: 'abc' },
+      { a: 1, b: 123 },
+      {},
+      123,
+      null,
+      undefined,
+    ]
+
+    expectRejectValues(pickedRt, rejectedValues)
+    expectRejectValues(omittedRt, rejectedValues)
   })
 })

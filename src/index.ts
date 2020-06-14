@@ -53,13 +53,11 @@ export interface LiteralRuntype<T> extends Runtype<T> {
   literal: T
 }
 
-// subtype to help with discriminatedUnion
+/**
+ * Subtype to help with record runtype fns (discriminatedUnion, pick, ...)
+ */
 export interface RecordRuntype<T> extends Runtype<T> {
-  // keys which are constant in case that T is a record type to help
-  // identifying the correct function for a discriminatedUnion type
-  constants: { [key: string]: string | number }
-
-  // TODO: might as well put the type-info of all keys here for introspection
+  fields: { [key: string]: any }
 }
 
 /// basic types
@@ -356,7 +354,7 @@ export function object(): Runtype<object> {
  * An index with string keys.
  */
 export function stringIndex<T>(t: Runtype<T>): Runtype<{ [key: string]: T }> {
-  return v => {
+  return (v) => {
     const o: any = objectRuntype(v)
     const res: { [key: string]: T } = {}
 
@@ -372,7 +370,7 @@ export function stringIndex<T>(t: Runtype<T>): Runtype<{ [key: string]: T }> {
  * An index with number keys.
  */
 export function numberIndex<T>(t: Runtype<T>): Runtype<{ [key: number]: T }> {
-  return v => {
+  return (v) => {
     const o: any = objectRuntype(v)
     const res: { [key: number]: T } = {}
 
@@ -417,7 +415,7 @@ export function record<T extends object>(
       _skipUnknownKeyCheck = skipUnknownKeyCheck
 
       if (!_skipUnknownKeyCheck) {
-        const unknownKeys = Object.keys(o).filter(k => !res.hasOwnProperty(k))
+        const unknownKeys = Object.keys(o).filter((k) => !res.hasOwnProperty(k))
 
         if (unknownKeys.length) {
           throw createError('invalid keys in record', unknownKeys)
@@ -426,15 +424,11 @@ export function record<T extends object>(
 
       return res
     },
-    { constants: {} },
+    { fields: {} },
   )
 
   for (const k in typemap) {
-    const tagLiteral = (typemap[k] as LiteralRuntype<any>).literal
-
-    if (tagLiteral !== undefined) {
-      rt.constants[k] = tagLiteral
-    }
+    rt.fields[k] = typemap[k]
   }
 
   return rt
@@ -570,17 +564,21 @@ export function discriminatedUnion<A, B, C, D, E, F, G, H, I, J>(
   i: RecordRuntype<I>,
   j: RecordRuntype<J>,
 ): Runtype<A | B | C | D | E | F | G | H | I | J>
-export function discriminatedUnion(
-  // key: any,
-  // ...runtypes: Array<RecordRuntype<any>>
-  ...args: any[]
-): Runtype<any> {
-  const key = args[0]
-  const runtypes = args.slice(1)
+export function discriminatedUnion(...args: any[]): Runtype<any> {
+  const key: string = args[0]
+  const runtypes: RecordRuntype<any>[] = args.slice(1)
   const typeMap = new Map<string | number, Runtype<any>>()
 
-  runtypes.forEach(t => {
-    const tagValue = t.constants[key]
+  // build an index for fast runtype lookups by literal
+  runtypes.forEach((t) => {
+    const runtype = t.fields[key]
+    const tagValue = runtype.literal
+
+    if (tagValue === undefined) {
+      throw new Error(
+        `broken record type definition, ${t}[${key}] is not a literal`,
+      )
+    }
 
     if (!(typeof tagValue === 'string' || typeof tagValue === 'number')) {
       throw new Error(
@@ -614,13 +612,13 @@ export function discriminatedUnion(
 }
 
 /**
- * An intersection of two records.
+ * An intersection of two record runtypes.
  */
 export function intersection<A, B>(
   recordA: RecordRuntype<A>,
   recordB: RecordRuntype<B>,
 ): Runtype<A & B> {
-  return v => {
+  return (v) => {
     const o = objectRuntype(v)
     const skipUnknownKeyCheck = _skipUnknownKeyCheck
 
@@ -631,7 +629,7 @@ export function intersection<A, B>(
     _skipUnknownKeyCheck = skipUnknownKeyCheck
 
     if (!_skipUnknownKeyCheck) {
-      const unknownKeys = Object.keys(o).filter(k => {
+      const unknownKeys = Object.keys(o).filter((k) => {
         return typeof res === 'object' && !(res as any).hasOwnProperty(k)
       })
 
@@ -643,3 +641,39 @@ export function intersection<A, B>(
     return res
   }
 }
+
+/**
+ * Build a new record runtype that contains some keys from the original
+ */
+export function pick<T, K extends keyof T>(
+  original: RecordRuntype<T>,
+  ...keys: K[]
+): RecordRuntype<Pick<T, K>> {
+  const newRecordFields: any = {}
+
+  keys.forEach((k: any) => {
+    newRecordFields[k] = original.fields[k]
+  })
+
+  return record(newRecordFields)
+}
+
+// type Omit<T, K extends keyof any> = Pick<T, Exclude<keyof T, K>>;
+
+/**
+ * Build a new record runtype that omits some keys from the original.
+ */
+export function omit<T, K extends keyof T>(
+  original: RecordRuntype<T>,
+  ...keys: K[]
+): RecordRuntype<Omit<T, K>> {
+  const newRecordFields: any = { ...original.fields }
+
+  keys.forEach((k: any) => {
+    delete newRecordFields[k]
+  })
+
+  return record(newRecordFields)
+}
+
+// TODO: other combinators like partial, required, ...
