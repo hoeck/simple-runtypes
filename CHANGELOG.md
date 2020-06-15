@@ -1,4 +1,4 @@
-### master
+### 1.0.0
 
 - add `.check` method throw a `RuntypeException`
 - add `fail`, `isFail` to replace throwing `RuntypeException` on runtype errors
