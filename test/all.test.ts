@@ -4,7 +4,7 @@ import * as sr from '../src'
 
 function expectAcceptValues<T>(rt: sr.Runtype<T>, values: unknown[]) {
   values.forEach((v) => {
-    expect(rt(v)).toEqual(v)
+    expect(rt.check(v)).toEqual(v)
   })
 }
 
@@ -14,7 +14,7 @@ function expectRejectValues<T>(
   error?: string | RegExp,
 ) {
   values.forEach((v) => {
-    expect(() => rt(v)).toThrow(error || /.*/)
+    expect(() => rt.check(v)).toThrow(error || /.*/)
   })
 }
 
@@ -40,7 +40,7 @@ function expectRejectObjectAttributes(
   error?: string | RegExp,
 ) {
   objectAttributes.forEach((a) => {
-    expect(() => rt(a)).toThrow(error || /.*/)
+    expect(() => rt.check(a)).toThrow(error || /.*/)
   })
 }
 
@@ -159,19 +159,19 @@ describe('literal', () => {
   const literalBoolean = sr.literal(true)
 
   it('accepts a string literal', () => {
-    const lit: StringLiteral = literalString('foo')
+    const lit: StringLiteral = literalString.check('foo')
 
     expect(lit).toBe('foo')
   })
 
   it('accepts a number literal', () => {
-    const lit: NumberLiteral = literalNumber(12)
+    const lit: NumberLiteral = literalNumber.check(12)
 
     expect(lit).toBe(12)
   })
 
   it('accepts a boolean literal', () => {
-    const lit: BooleanLiteral = literalBoolean(true)
+    const lit: BooleanLiteral = literalBoolean.check(true)
 
     expect(lit).toBe(true)
   })
@@ -416,24 +416,24 @@ describe('numberIndex', () => {
 
 describe('record', () => {
   it('accepts simple records', () => {
-    const runType = sr.record({
+    const runtype = sr.record({
       a: sr.integer(),
       b: sr.string(),
     })
 
-    const value: { a: number; b: string } = runType({ a: 0, b: 'foo' })
+    const value: { a: number; b: string } = runtype.check({ a: 0, b: 'foo' })
 
     expect(value).toEqual({ a: 0, b: 'foo' })
   })
 
   it('always returns a new object', () => {
-    const runType = sr.record({
+    const runtype = sr.record({
       a: sr.integer(),
       b: sr.string(),
     })
 
     const input = { a: 0, b: 'foo' }
-    const value: { a: number; b: string } = runType(input)
+    const value: { a: number; b: string } = runtype.check(input)
 
     expect(value).not.toBe(input)
   })
@@ -447,17 +447,17 @@ describe('record', () => {
   })
 
   it('accepts records with optional values', () => {
-    const runType = sr.record({
+    const runtype = sr.record({
       a: sr.integer(),
       b: sr.optional(sr.string()),
     })
 
     let value: { a: number; b?: string }
 
-    value = runType({ a: 0, b: 'foo' })
+    value = runtype.check({ a: 0, b: 'foo' })
     expect(value).toEqual({ a: 0, b: 'foo' })
 
-    value = runType({ a: 0, b: undefined })
+    value = runtype.check({ a: 0, b: undefined })
     expect(value).toEqual({ a: 0, b: undefined })
   })
 
@@ -468,7 +468,7 @@ describe('record', () => {
     })
 
     expect(() =>
-      runType({ a: 1, b: 'foo', c: 'not-in-record-definition' }),
+      runType.check({ a: 1, b: 'foo', c: 'not-in-record-definition' }),
     ).toThrow('invalid keys in record')
   })
 
@@ -611,6 +611,37 @@ describe('intersection', () => {
       undefined,
       NaN,
       99,
+    ])
+  })
+})
+
+describe('union', () => {
+  const runtype = sr.union(
+    sr.string(),
+    sr.number(),
+    sr.record({ a: sr.boolean(), b: sr.optional(sr.number()) }),
+  )
+
+  it('should accept values in the union type', () => {
+    expectAcceptValues(runtype, [
+      'asd',
+      123,
+      -1.24,
+      '',
+      { a: false },
+      { a: true, b: 123 },
+    ])
+  })
+
+  it('should reject invalid values not in the union type', () => {
+    expectRejectValues(runtype, [
+      false,
+      undefined,
+      NaN,
+      [],
+      {},
+      { b: 123 },
+      { a: 'string' },
     ])
   })
 })
