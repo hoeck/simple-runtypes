@@ -43,13 +43,19 @@ export interface Fail {
   reason?: string
 }
 
-function fail(msg: string, value: any): Fail {
+/**
+ * Create a runtype validation error
+ */
+export function fail(msg: string, value: any): Fail {
   return {
     [runtypeFailSymbol]: true,
     reason: `${msg}, value: ${debugValue(value)}${currentKey()}`,
   }
 }
 
+/**
+ * Check whether a value is a failure.
+ */
 export function isFail(v: unknown): v is Fail {
   if (typeof v !== 'object' || !v) {
     return false
@@ -65,20 +71,6 @@ export interface Runtype<T> {
   // a function to check that v 'conforms' to type T
   (v: unknown): T | Fail
   check(value: unknown): T
-}
-
-/**
- * Runtype that is a literal
- */
-export interface LiteralRuntype<T> extends Runtype<T> {
-  literal: T
-}
-
-/**
- * Runtype to help with record runtype fns (discriminatedUnion, pick, ...)
- */
-export interface RecordRuntype<T> extends Runtype<T> {
-  fields: { [key: string]: any }
 }
 
 /**
@@ -214,12 +206,10 @@ export function string(): Runtype<string> {
 /**
  * A literal (string | number | boolean).
  */
-export function literal<T extends string>(literal: T): LiteralRuntype<T>
-export function literal<T extends number>(literal: T): LiteralRuntype<T>
-export function literal<T extends boolean>(literal: T): LiteralRuntype<T>
-export function literal(
-  literal: string | number | boolean,
-): LiteralRuntype<any> {
+export function literal<T extends string>(literal: T): Runtype<T>
+export function literal<T extends number>(literal: T): Runtype<T>
+export function literal<T extends boolean>(literal: T): Runtype<T>
+export function literal(literal: string | number | boolean): Runtype<any> {
   const rt: any = runtype((v: unknown) => {
     if (v === literal) {
       return literal
@@ -510,8 +500,8 @@ export function numberIndex<T>(t: Runtype<T>): Runtype<{ [key: number]: T }> {
  */
 export function record<T extends object>(
   typemap: { [K in keyof T]: Runtype<T[K]> },
-): RecordRuntype<T> {
-  const rt: RecordRuntype<T> = <any>runtype((v: unknown) => {
+): Runtype<T> {
+  const rt: Runtype<T> = <any>runtype((v: unknown) => {
     const o: any = objectRuntype(v)
 
     if (isFail(o)) {
@@ -548,11 +538,13 @@ export function record<T extends object>(
     return res
   })
 
-  rt.fields = {}
+  const fields: { [key: string]: any } = {}
 
   for (const k in typemap) {
-    rt.fields[k] = typemap[k]
+    fields[k] = typemap[k]
   }
+
+  ;(<any>rt).fields = fields
 
   return rt
 }
@@ -602,98 +594,95 @@ export function nullable<A>(t: Runtype<A>): Runtype<null | A> {
  * Runtypes must be created with `record(...)` which contains type metadata to
  * perform an efficient lookup of runtype functions.
  */
-export function discriminatedUnion<A>(
-  key: keyof A,
-  a: RecordRuntype<A>,
-): RecordRuntype<A>
+export function discriminatedUnion<A>(key: keyof A, a: Runtype<A>): Runtype<A>
 export function discriminatedUnion<A, B>(
   key: keyof (A | B),
-  a: RecordRuntype<A>,
-  b: RecordRuntype<B>,
-): RecordRuntype<A | B>
+  a: Runtype<A>,
+  b: Runtype<B>,
+): Runtype<A | B>
 export function discriminatedUnion<A, B, C>(
   key: keyof (A | B | C),
-  a: RecordRuntype<A>,
-  b: RecordRuntype<B>,
-  c: RecordRuntype<C>,
-): RecordRuntype<A | B | C>
+  a: Runtype<A>,
+  b: Runtype<B>,
+  c: Runtype<C>,
+): Runtype<A | B | C>
 export function discriminatedUnion<A, B, C, D>(
   key: keyof (A | B | C | D),
-  a: RecordRuntype<A>,
-  b: RecordRuntype<B>,
-  c: RecordRuntype<C>,
-  d: RecordRuntype<D>,
+  a: Runtype<A>,
+  b: Runtype<B>,
+  c: Runtype<C>,
+  d: Runtype<D>,
 ): Runtype<A | B | C | D>
 export function discriminatedUnion<A, B, C, D, E>(
   key: keyof (A | B | C | D | E),
-  a: RecordRuntype<A>,
-  b: RecordRuntype<B>,
-  c: RecordRuntype<C>,
-  d: RecordRuntype<D>,
-  e: RecordRuntype<E>,
+  a: Runtype<A>,
+  b: Runtype<B>,
+  c: Runtype<C>,
+  d: Runtype<D>,
+  e: Runtype<E>,
 ): Runtype<A | B | C | D | E>
 export function discriminatedUnion<A, B, C, D, E, F>(
   key: keyof (A | B | C | D | F),
-  a: RecordRuntype<A>,
-  b: RecordRuntype<B>,
-  c: RecordRuntype<C>,
-  d: RecordRuntype<D>,
-  e: RecordRuntype<E>,
-  f: RecordRuntype<F>,
+  a: Runtype<A>,
+  b: Runtype<B>,
+  c: Runtype<C>,
+  d: Runtype<D>,
+  e: Runtype<E>,
+  f: Runtype<F>,
 ): Runtype<A | B | C | D | E | F>
 export function discriminatedUnion<A, B, C, D, E, F, G>(
   key: keyof (A | B | C | D | F | G),
-  a: RecordRuntype<A>,
-  b: RecordRuntype<B>,
-  c: RecordRuntype<C>,
-  d: RecordRuntype<D>,
-  e: RecordRuntype<E>,
-  f: RecordRuntype<F>,
-  g: RecordRuntype<G>,
+  a: Runtype<A>,
+  b: Runtype<B>,
+  c: Runtype<C>,
+  d: Runtype<D>,
+  e: Runtype<E>,
+  f: Runtype<F>,
+  g: Runtype<G>,
 ): Runtype<A | B | C | D | E | F | G>
 export function discriminatedUnion<A, B, C, D, E, F, G, H>(
   key: keyof (A | B | C | D | F | G | H),
-  a: RecordRuntype<A>,
-  b: RecordRuntype<B>,
-  c: RecordRuntype<C>,
-  d: RecordRuntype<D>,
-  e: RecordRuntype<E>,
-  f: RecordRuntype<F>,
-  g: RecordRuntype<G>,
-  h: RecordRuntype<H>,
+  a: Runtype<A>,
+  b: Runtype<B>,
+  c: Runtype<C>,
+  d: Runtype<D>,
+  e: Runtype<E>,
+  f: Runtype<F>,
+  g: Runtype<G>,
+  h: Runtype<H>,
 ): Runtype<A | B | C | D | E | F | G | H>
 export function discriminatedUnion<A, B, C, D, E, F, G, H, I>(
   key: keyof (A | B | C | D | F | G | H | I),
-  a: RecordRuntype<A>,
-  b: RecordRuntype<B>,
-  c: RecordRuntype<C>,
-  d: RecordRuntype<D>,
-  e: RecordRuntype<E>,
-  f: RecordRuntype<F>,
-  g: RecordRuntype<G>,
-  h: RecordRuntype<H>,
-  i: RecordRuntype<I>,
+  a: Runtype<A>,
+  b: Runtype<B>,
+  c: Runtype<C>,
+  d: Runtype<D>,
+  e: Runtype<E>,
+  f: Runtype<F>,
+  g: Runtype<G>,
+  h: Runtype<H>,
+  i: Runtype<I>,
 ): Runtype<A | B | C | D | E | F | G | H | I>
 export function discriminatedUnion<A, B, C, D, E, F, G, H, I, J>(
   key: keyof (A | B | C | D | F | G | H | I | J),
-  a: RecordRuntype<A>,
-  b: RecordRuntype<B>,
-  c: RecordRuntype<C>,
-  d: RecordRuntype<D>,
-  e: RecordRuntype<E>,
-  f: RecordRuntype<F>,
-  g: RecordRuntype<G>,
-  h: RecordRuntype<H>,
-  i: RecordRuntype<I>,
-  j: RecordRuntype<J>,
+  a: Runtype<A>,
+  b: Runtype<B>,
+  c: Runtype<C>,
+  d: Runtype<D>,
+  e: Runtype<E>,
+  f: Runtype<F>,
+  g: Runtype<G>,
+  h: Runtype<H>,
+  i: Runtype<I>,
+  j: Runtype<J>,
 ): Runtype<A | B | C | D | E | F | G | H | I | J>
 export function discriminatedUnion(...args: any[]): Runtype<any> {
   const key: string = args[0]
-  const runtypes: RecordRuntype<any>[] = args.slice(1)
+  const runtypes: Runtype<any>[] = args.slice(1)
   const typeMap = new Map<string | number, Runtype<any>>()
 
   // build an index for fast runtype lookups by literal
-  runtypes.forEach((t) => {
+  runtypes.forEach((t: any) => {
     const runtype = t.fields[key]
     const tagValue = runtype.literal
 
@@ -785,12 +774,12 @@ export function union(...runtypes: Runtype<any>[]): Runtype<any> {
 
 // An intersection of two record runtypes
 function recordIntersection<A, B>(
-  recordA: RecordRuntype<A>,
-  recordB: RecordRuntype<B>,
-): RecordRuntype<A & B> {
+  recordA: Runtype<A>,
+  recordB: Runtype<B>,
+): Runtype<A & B> {
   const fields: { [key: string]: Runtype<any> } = {}
-  const a = recordA.fields
-  const b = recordB.fields
+  const a = (<any>recordA).fields
+  const b = (<any>recordB).fields
 
   for (let k in { ...a, ...b }) {
     if (a[k] && b[k]) {
@@ -810,10 +799,7 @@ function recordIntersection<A, B>(
 /**
  * An intersection of two runtypes
  */
-function intersection2<A, B>(
-  a: RecordRuntype<A>,
-  b: RecordRuntype<B>,
-): RecordRuntype<A & B>
+function intersection2<A, B>(a: Runtype<A>, b: Runtype<B>): Runtype<A & B>
 function intersection2<A, B>(a: Runtype<A>, b: Runtype<B>): Runtype<A & B>
 function intersection2(a: Runtype<any>, b: Runtype<any>): Runtype<any> {
   if ('fields' in a && 'fields' in b) {
@@ -839,16 +825,7 @@ function intersection2(a: Runtype<any>, b: Runtype<any>): Runtype<any> {
 /**
  * An intersection of runtypes.
  */
-export function intersection<A, B>(
-  a: RecordRuntype<A>,
-  b: RecordRuntype<B>,
-): RecordRuntype<A & B>
 export function intersection<A, B>(a: Runtype<A>, b: Runtype<B>): Runtype<A & B>
-export function intersection<A, B, C>(
-  a: RecordRuntype<A>,
-  b: RecordRuntype<B>,
-  c: RecordRuntype<C>,
-): RecordRuntype<A & B & C>
 export function intersection<A, B, C>(
   a: Runtype<A>,
   b: Runtype<B>,
@@ -868,13 +845,19 @@ export function intersection(...args: Runtype<any>[]): Runtype<any> {
  * Build a new record runtype that contains some keys from the original
  */
 export function pick<T, K extends keyof T>(
-  original: RecordRuntype<T>,
+  original: Runtype<T>,
   ...keys: K[]
-): RecordRuntype<Pick<T, K>> {
+): Runtype<Pick<T, K>> {
+  const fields = (<any>original).fields
+
+  if (!fields) {
+    throw new Error(`expected a record runtype`)
+  }
+
   const newRecordFields: any = {}
 
   keys.forEach((k: any) => {
-    newRecordFields[k] = original.fields[k]
+    newRecordFields[k] = fields[k]
   })
 
   return record(newRecordFields)
@@ -886,10 +869,16 @@ export function pick<T, K extends keyof T>(
  * Build a new record runtype that omits some keys from the original.
  */
 export function omit<T, K extends keyof T>(
-  original: RecordRuntype<T>,
+  original: Runtype<T>,
   ...keys: K[]
-): RecordRuntype<Omit<T, K>> {
-  const newRecordFields: any = { ...original.fields }
+): Runtype<Omit<T, K>> {
+  const fields = (<any>original).fields
+
+  if (!fields) {
+    throw new Error(`expected a record runtype`)
+  }
+
+  const newRecordFields: any = { ...fields }
 
   keys.forEach((k: any) => {
     delete newRecordFields[k]

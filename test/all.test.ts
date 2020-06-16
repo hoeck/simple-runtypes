@@ -461,6 +461,21 @@ describe('record', () => {
     expect(value).toEqual({ a: 0, b: undefined })
   })
 
+  it('accepts nested records', () => {
+    const runtype = sr.record({
+      a: sr.record({
+        b: sr.record({
+          c: sr.string(),
+        }),
+      }),
+    })
+
+    let value: { a: { b: { c: string } } }
+
+    value = runtype.check({ a: { b: { c: 'foo' } } })
+    expect(value).toEqual({ a: { b: { c: 'foo' } } })
+  })
+
   it('rejects records with non-mapped keys', () => {
     const runType = sr.record({
       a: sr.integer(),
