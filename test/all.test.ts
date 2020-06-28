@@ -13,9 +13,29 @@ function expectRejectValues<T>(
   values: unknown[],
   error?: string | RegExp,
 ) {
+  // when using runtypes as a normal user, they respond with throwing errors
   values.forEach((v) => {
     expect(() => rt(v)).toThrow(error || /.*/)
   })
+
+  // when using them internally, they return a Fail
+  values.forEach((v) => {
+    expect(() => (rt as any)(v, sr.failSymbol)).not.toThrow()
+    expect((rt as any)(v, sr.failSymbol)).toEqual({
+      [sr.failSymbol]: true,
+      reason: expect.any(String),
+      path: expect.any(Array),
+    })
+  })
+
+  // when passing something that is not a failSymbol or undefined, they
+  // respond with a usage error
+  expect(() => (rt as any)(Symbol('wrong'), null)).toThrow(
+    /failOrThrow must be undefined or the failSymbol/,
+  )
+  expect(() => (rt as any)(Symbol('wrong'), 0)).toThrow(
+    /failOrThrow must be undefined or the failSymbol/,
+  )
 }
 
 // properties defined on all js objects,
@@ -697,5 +717,55 @@ describe('pick & omit', () => {
 
     expectRejectValues(pickedRt, rejectedValues)
     expectRejectValues(omittedRt, rejectedValues)
+  })
+})
+
+describe('error messages', () => {
+  const runtypeA = sr.record({
+    a: sr.string(),
+    b: sr.array(
+      sr.record({
+        point: sr.tuple(sr.number(), sr.number()),
+      }),
+    ),
+  })
+
+  it('should report the full path to an invalid value', () => {
+    try {
+      runtypeA({ a: 'foo', b: [{ point: [12, 13] }, { point: [12, null] }] })
+    } catch (e) {
+      expect(sr.getFormattedErrorPath(e)).toEqual('b[1].point[1]')
+      expect(sr.getFormattedError(e)).toEqual(
+        'RuntypeError: expected a number at `value.b[1].point[1]` in `{"a":"foo","b":[{"point":[12,13]},{"point":[12,null]}]}`',
+      )
+    }
+  })
+})
+
+describe('custom runtypes', () => {
+  const rt = sr.runtype((v) => {
+    if (v === 31) {
+      return 31
+    }
+
+    if (v === '-') {
+      return '-'
+    }
+
+    return sr.fail('not the right type')
+  })
+
+  it('should create a custom runtype', () => {
+    expectAcceptValues(rt, ['-', 31])
+    expectRejectValues(rt, ['31', null, 123, []])
+  })
+
+  it('should not throw an exception when used internally', () => {
+    expect((rt as any)(123, sr.failSymbol)).toEqual(
+      expect.objectContaining({
+        [sr.failSymbol]: true,
+        reason: 'not the right type',
+      }),
+    )
   })
 })

@@ -1,20 +1,4 @@
-/// infrastructure
-
-// context variables:
-
-// the current processed key in object to provide better error messages
-let _currentKey: string | undefined // TODO: remove that and add the current key on failure
-
-// current key accessor
-function currentKey() {
-  if (!_currentKey) {
-    return ''
-  }
-
-  return ` (key: ${_currentKey})`
-}
-
-function debugValue(v: any, maxLength: number = 128) {
+function debugValue(v: any, maxLength: number = 512) {
   let s: string
 
   if (v === undefined) {
@@ -36,36 +20,99 @@ function debugValue(v: any, maxLength: number = 128) {
 
 /**
  * Thrown if the input does not match the runtype.
+ *
+ * Use `getFormattedErrorPath`, `getFormattedErrorValue` and
+ * `getFormattedError` to convert path and value to a loggable string.
  */
-export class RuntypeError extends Error {}
+export class RuntypeError extends Error {
+  readonly path?: (string | number)[]
+  readonly value?: any
+
+  constructor(message: string, value?: any, path?: (string | number)[]) {
+    super(message)
+
+    this.name = 'RuntypeError'
+    this.path = path
+    this.value = value
+  }
+}
+
+/**
+ * Return the object path at which the error occured.
+ */
+export function getFormattedErrorPath(e: RuntypeError) {
+  if (!Array.isArray(e.path)) {
+    return '(error is not a RuntypeError!)'
+  }
+
+  return e.path
+    .map((k) =>
+      typeof k === 'number'
+        ? `[${k}]`
+        : /^([A-z0-9_])+$/.test(k)
+        ? `.${k}`
+        : `['${JSON.stringify(k)}']`,
+    )
+    .join('')
+    .slice(1)
+}
+
+/**
+ * Return a string representaiton of the value that failed the runtype check.
+ *
+ * Cap the size of the returned string at maxLength
+ */
+export function getFormattedErrorValue(e: RuntypeError, maxLength = 512) {
+  return debugValue(e.value, maxLength)
+}
+
+/**
+ * Return a string representaiton of the value that failed the runtype check.
+ *
+ * Cap the size of the returned string at maxLength
+ */
+export function getFormattedError(e: RuntypeError, maxLength = 512) {
+  return `${e.toString()} at \`value.${getFormattedErrorPath(
+    e,
+  )}\` in \`${getFormattedErrorValue(e, maxLength)}\``
+}
 
 /**
  * Thrown if the api is misused.
  */
 export class RuntypeUsageError extends Error {}
 
+/**
+ * Symbol that identifies failed typechecks
+ */
 export const failSymbol: unique symbol = Symbol('SimpleRuntypesFail')
 
+/**
+ * Object to return if a typecheck failed
+ */
 export interface Fail {
   [failSymbol]: true
-  reason?: string
+  reason: string
+  path: (string | number)[]
 }
 
+// create a fail or raise the error exception if the called runtype was on top
 function createFail(
   failOrThrow: typeof failSymbol | undefined,
   msg: string,
-  value: any,
+  topLevelValue?: any,
 ): any {
   if (failOrThrow === undefined) {
     // runtype check failed
-    throw new RuntypeError(msg)
+    throw new RuntypeError(msg, topLevelValue)
   } else if (failOrThrow === failSymbol) {
     // runtype check failed but it should not throw an exception bc its called
     // internally e.g. as part of a union or because we want to add debug info
     // while unrolling the stack
     return {
       [failSymbol]: true,
-      reason: `${msg}, value: ${debugValue(value)}${currentKey()}`,
+      reason: `${msg}`,
+      path: [],
     }
   } else {
     throw new RuntypeUsageError(
@@ -77,10 +124,23 @@ function createFail(
 }
 
 // pass the fail up to the caller or, if on top, raise the error exception
-function propagateFail(failOrThrow: typeof failSymbol | undefined, fail: Fail) {
+function propagateFail(
+  failOrThrow: typeof failSymbol | undefined,
+  fail: Fail,
+  topLevelValue?: any,
+  key?: string | number,
+) {
+  if (key !== undefined) {
+    fail.path.push(key)
+  }
+
   if (failOrThrow === undefined) {
     // runtype check failed
-    throw new RuntypeError(fail.reason)
+    throw new RuntypeError(
+      fail.reason,
+      topLevelValue,
+      fail.path.length ? fail.path.reverse() : undefined,
+    )
   } else if (failOrThrow === failSymbol) {
     return fail
   } else {
@@ -93,14 +153,14 @@ function propagateFail(failOrThrow: typeof failSymbol | undefined, fail: Fail) {
 }
 
 /**
- * Create a runtype validation error
+ * Create a runtype validation error for custom runtypes
  */
 export function fail(msg: string) {
-  return createFail(failSymbol, msg, undefined)
+  return createFail(failSymbol, msg)
 }
 
 /**
- * Check whether a value is a failure.
+ * Check whether a returned value is a failure.
  */
 export function isFail(v: unknown): v is Fail {
   if (typeof v !== 'object' || !v) {
@@ -112,15 +172,23 @@ export function isFail(v: unknown): v is Fail {
 
 /**
  * Runtype
+ *
+ * Just a function. The returned value may be a copy of v, depending on the
+ * runtypes implementation.
  */
 export interface Runtype<T> {
   // a function to check that v 'conforms' to type T
   (v: unknown): T
 }
 
-// internal runtype is one that receives an additional flag that determines
-// whether the runtype should throw a RuntypeError or whether it should return
-// a Fail up to the caller
+// The internal runtype is one that receives an additional flag that
+// determines whether the runtype should throw a RuntypeError or whether it
+// should return a Fail up to the caller.
+//
+// Use this to:
+//   * accumulate additional path data when unwinding a fail (propagateFail)
+//   * have runtypes return a dedicated fail value to implement union over any
+//     runtypes (isFail)
 function internalRuntype<T>(
   fn: (v: unknown, failOrThrow?: typeof failSymbol) => T,
 ): Runtype<T> {
@@ -140,7 +208,7 @@ export function runtype<T>(fn: (v: unknown) => T | Fail): Runtype<T> {
     const res = fn(v)
 
     if (isFail(res)) {
-      return propagateFail(failOrThrow, res)
+      return propagateFail(failOrThrow, res, v)
     }
 
     return res
@@ -205,7 +273,7 @@ export const stringAsIntegerRuntype = internalRuntype<number>(
       const n = (integerRuntype as InternalRuntype)(parsedNumber, failSymbol)
 
       if (isFail(n)) {
-        return propagateFail(failOrThrow, n)
+        return propagateFail(failOrThrow, n, v)
       }
 
       // ensure that value did only contain that integer, nothing else
@@ -418,7 +486,7 @@ export function array<A>(a: Runtype<A>): Runtype<A[]> {
     const arrayValue = (arrayRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(arrayValue)) {
-      return propagateFail(failOrThrow, arrayValue)
+      return propagateFail(failOrThrow, arrayValue, v)
     }
 
     const res: A[] = new Array(arrayValue.length)
@@ -427,7 +495,7 @@ export function array<A>(a: Runtype<A>): Runtype<A[]> {
       const item = (a as InternalRuntype)(arrayValue[i], failSymbol)
 
       if (isFail(item)) {
-        return propagateFail(failOrThrow, item)
+        return propagateFail(failOrThrow, item, v, i)
       }
 
       res[i] = item
@@ -465,7 +533,7 @@ export function tuple(...types: Runtype<any>[]): Runtype<any> {
     const a = (arrayRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(a)) {
-      return propagateFail(failOrThrow, a)
+      return propagateFail(failOrThrow, a, v)
     }
 
     if (a.length !== types.length) {
@@ -482,7 +550,7 @@ export function tuple(...types: Runtype<any>[]): Runtype<any> {
       const item = (types[i] as InternalRuntype)(a[i], failSymbol)
 
       if (isFail(item)) {
-        return propagateFail(failOrThrow, item)
+        return propagateFail(failOrThrow, item, v, i)
       }
 
       res[i] = item
@@ -516,7 +584,7 @@ export function stringIndex<T>(t: Runtype<T>): Runtype<{ [key: string]: T }> {
     const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(o)) {
-      return propagateFail(failOrThrow, o)
+      return propagateFail(failOrThrow, o, v)
     }
 
     const res: { [key: string]: T } = {}
@@ -526,7 +594,7 @@ export function stringIndex<T>(t: Runtype<T>): Runtype<{ [key: string]: T }> {
         const value = (t as InternalRuntype)(o[k], failSymbol)
 
         if (isFail(value)) {
-          return propagateFail(failOrThrow, value)
+          return propagateFail(failOrThrow, value, v, k)
         }
 
         res[k] = value
@@ -545,7 +613,7 @@ export function numberIndex<T>(t: Runtype<T>): Runtype<{ [key: number]: T }> {
     const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(o)) {
-      return propagateFail(failOrThrow, o)
+      return propagateFail(failOrThrow, o, v)
     }
 
     const res: { [key: number]: T } = {}
@@ -554,13 +622,13 @@ export function numberIndex<T>(t: Runtype<T>): Runtype<{ [key: number]: T }> {
       const key = (stringAsIntegerRuntype as InternalRuntype)(k, failOrThrow)
 
       if (isFail(key)) {
-        return propagateFail(failOrThrow, key)
+        return propagateFail(failOrThrow, key, v)
       }
 
       const value = (t as InternalRuntype)(o[key], failSymbol)
 
       if (isFail(value)) {
-        return propagateFail(failOrThrow, value)
+        return propagateFail(failOrThrow, value, v, key)
       }
 
       res[key] = value
@@ -580,35 +648,32 @@ export function record<T extends object>(
     const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(o)) {
-      return propagateFail(failOrThrow, o)
+      return propagateFail(failOrThrow, o, v)
     }
 
     // TODO: optimize allocations: only create a copy if any of the key
     // runtypes return a different object - otherwise return value as is
     const res = {} as T
 
-    // context vars
-    const currentKey = _currentKey
-
     for (const k in typemap) {
-      _currentKey = k
-
       // nested types should always fail with explicit `Fail` so we can add additional data
       const value = (typemap[k] as InternalRuntype)(o[k], failSymbol)
 
       if (isFail(value)) {
-        return propagateFail(failOrThrow, value)
+        return propagateFail(failOrThrow, value, v, k)
       }
 
       res[k] = value
     }
 
-    _currentKey = currentKey
-
     const unknownKeys = Object.keys(o).filter((k) => !res.hasOwnProperty(k))
 
     if (unknownKeys.length) {
-      return createFail(failOrThrow, 'invalid keys in record', unknownKeys)
+      return createFail(
+        failOrThrow,
+        `invalid keys in record ${debugValue(unknownKeys)}`,
+        v,
+      )
     }
 
     return res
@@ -792,7 +857,7 @@ export function discriminatedUnion(...args: any[]): Runtype<any> {
     const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(o)) {
-      return propagateFail(failOrThrow, o)
+      return propagateFail(failOrThrow, o, v)
     }
 
     const tagValue = o[key]
@@ -852,7 +917,7 @@ export function union(...runtypes: Runtype<any>[]): Runtype<any> {
       }
     }
 
-    return propagateFail(failOrThrow, lastFail as any)
+    return propagateFail(failOrThrow, lastFail as any, v)
   })
 }
 
@@ -893,11 +958,11 @@ function intersection2(a: Runtype<any>, b: Runtype<any>): Runtype<any> {
       const valFromB = (b as InternalRuntype)(v, failOrThrow)
 
       if (isFail(valFromB)) {
-        return propagateFail(failOrThrow, valFromB)
+        return propagateFail(failOrThrow, valFromB, v)
       }
 
       if (isFail(valFromA)) {
-        return propagateFail(failOrThrow, valFromA)
+        return propagateFail(failOrThrow, valFromA, v)
       }
 
       return valFromB // second runtype arg is preferred

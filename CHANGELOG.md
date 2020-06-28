@@ -3,7 +3,11 @@
 - remove `.check` and make user invocations of runtypes throw exceptions
   (using `.check` turned out to be a major annoyance and I forgot it in almost
   half of my code bc typescript does not warn me)
-- add `RuntimeUsageError`, thrown when the api is misused
+- add `runtype` to create custom runtypes
+- add `RuntypeUsageError`, thrown when the api is misused
+- add `getFormattedError`, `getFormattedErrorPath` and
+  `getFormattedErrorValue` functions to extract information from
+  `RuntypeError`
 
 ### 1.0.0
 
