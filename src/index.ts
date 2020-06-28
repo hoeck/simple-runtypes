@@ -39,6 +39,11 @@ function debugValue(v: any, maxLength: number = 128) {
  */
 export class RuntypeError extends Error {}
 
+/**
+ * Thrown if the api is misused.
+ */
+export class RuntypeUsageError extends Error {}
+
 export const failSymbol: unique symbol = Symbol('SimpleRuntypesFail')
 
 export interface Fail {
@@ -63,7 +68,7 @@ function createFail(
       reason: `${msg}, value: ${debugValue(value)}${currentKey()}`,
     }
   } else {
-    throw new Error(
+    throw new RuntypeUsageError(
       `failOrThrow must be undefined or the failSymbol, not ${JSON.stringify(
         failOrThrow,
       )}`,
@@ -79,7 +84,7 @@ function propagateFail(failOrThrow: typeof failSymbol | undefined, fail: Fail) {
   } else if (failOrThrow === failSymbol) {
     return fail
   } else {
-    throw new Error(
+    throw new RuntypeUsageError(
       `failOrThrow must be undefined or the failSymbol, not ${JSON.stringify(
         failOrThrow,
       )}`,
@@ -765,13 +770,13 @@ export function discriminatedUnion(...args: any[]): Runtype<any> {
     const tagValue = runtype.literal
 
     if (tagValue === undefined) {
-      throw new Error(
+      throw new RuntypeUsageError(
         `broken record type definition, ${t}[${key}] is not a literal`,
       )
     }
 
     if (!(typeof tagValue === 'string' || typeof tagValue === 'number')) {
-      throw new Error(
+      throw new RuntypeUsageError(
         `broken record type definition, ${t}[${key}] must be a string or number, not ${debugValue(
           tagValue,
         )}`,
@@ -831,7 +836,7 @@ export function union<A, B, C, D, E>(
 ): Runtype<A | B | C | D | E>
 export function union(...runtypes: Runtype<any>[]): Runtype<any> {
   if (!runtypes.length) {
-    throw new Error('no runtypes given to union')
+    throw new RuntypeUsageError('no runtypes given to union')
   }
 
   return internalRuntype((v, failOrThrow) => {
@@ -868,7 +873,7 @@ function recordIntersection<A, B>(
     } else if (b[k]) {
       fields[k] = b[k]
     } else {
-      throw new Error('invalid else')
+      throw new RuntypeUsageError('invalid else')
     }
   }
 
@@ -915,7 +920,9 @@ export function intersection(...args: Runtype<any>[]): Runtype<any> {
   } else if (args.length === 3) {
     return intersection(intersection2(args[0], args[1]), args[2])
   } else {
-    throw new Error(`unsupported number of arguments ${args.length}`)
+    throw new RuntypeUsageError(
+      `unsupported number of arguments ${args.length}`,
+    )
   }
 }
 
@@ -929,7 +936,7 @@ export function pick<T, K extends keyof T>(
   const fields = (<any>original).fields
 
   if (!fields) {
-    throw new Error(`expected a record runtype`)
+    throw new RuntypeUsageError(`expected a record runtype`)
   }
 
   const newRecordFields: any = {}
@@ -953,7 +960,7 @@ export function omit<T, K extends keyof T>(
   const fields = (<any>original).fields
 
   if (!fields) {
-    throw new Error(`expected a record runtype`)
+    throw new RuntypeUsageError(`expected a record runtype`)
   }
 
   const newRecordFields: any = { ...fields }
