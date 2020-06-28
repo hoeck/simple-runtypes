@@ -4,7 +4,7 @@ import * as sr from '../src'
 
 function expectAcceptValues<T>(rt: sr.Runtype<T>, values: unknown[]) {
   values.forEach((v) => {
-    expect(rt.check(v)).toEqual(v)
+    expect(rt(v)).toEqual(v)
   })
 }
 
@@ -14,7 +14,7 @@ function expectRejectValues<T>(
   error?: string | RegExp,
 ) {
   values.forEach((v) => {
-    expect(() => rt.check(v)).toThrow(error || /.*/)
+    expect(() => rt(v)).toThrow(error || /.*/)
   })
 }
 
@@ -40,7 +40,7 @@ function expectRejectObjectAttributes(
   error?: string | RegExp,
 ) {
   objectAttributes.forEach((a) => {
-    expect(() => rt.check(a)).toThrow(error || /.*/)
+    expect(() => rt(a)).toThrow(error || /.*/)
   })
 }
 
@@ -159,19 +159,19 @@ describe('literal', () => {
   const literalBoolean = sr.literal(true)
 
   it('accepts a string literal', () => {
-    const lit: StringLiteral = literalString.check('foo')
+    const lit: StringLiteral = literalString('foo')
 
     expect(lit).toBe('foo')
   })
 
   it('accepts a number literal', () => {
-    const lit: NumberLiteral = literalNumber.check(12)
+    const lit: NumberLiteral = literalNumber(12)
 
     expect(lit).toBe(12)
   })
 
   it('accepts a boolean literal', () => {
-    const lit: BooleanLiteral = literalBoolean.check(true)
+    const lit: BooleanLiteral = literalBoolean(true)
 
     expect(lit).toBe(true)
   })
@@ -421,7 +421,7 @@ describe('record', () => {
       b: sr.string(),
     })
 
-    const value: { a: number; b: string } = runtype.check({ a: 0, b: 'foo' })
+    const value: { a: number; b: string } = runtype({ a: 0, b: 'foo' })
 
     expect(value).toEqual({ a: 0, b: 'foo' })
   })
@@ -433,7 +433,7 @@ describe('record', () => {
     })
 
     const input = { a: 0, b: 'foo' }
-    const value: { a: number; b: string } = runtype.check(input)
+    const value: { a: number; b: string } = runtype(input)
 
     expect(value).not.toBe(input)
   })
@@ -454,10 +454,10 @@ describe('record', () => {
 
     let value: { a: number; b?: string }
 
-    value = runtype.check({ a: 0, b: 'foo' })
+    value = runtype({ a: 0, b: 'foo' })
     expect(value).toEqual({ a: 0, b: 'foo' })
 
-    value = runtype.check({ a: 0, b: undefined })
+    value = runtype({ a: 0, b: undefined })
     expect(value).toEqual({ a: 0, b: undefined })
   })
 
@@ -472,7 +472,7 @@ describe('record', () => {
 
     let value: { a: { b: { c: string } } }
 
-    value = runtype.check({ a: { b: { c: 'foo' } } })
+    value = runtype({ a: { b: { c: 'foo' } } })
     expect(value).toEqual({ a: { b: { c: 'foo' } } })
   })
 
@@ -483,7 +483,7 @@ describe('record', () => {
     })
 
     expect(() =>
-      runType.check({ a: 1, b: 'foo', c: 'not-in-record-definition' }),
+      runType({ a: 1, b: 'foo', c: 'not-in-record-definition' }),
     ).toThrow('invalid keys in record')
   })
 

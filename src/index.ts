@@ -46,12 +46,30 @@ export interface Fail {
 /**
  * Create a runtype validation error
  */
-export function fail(msg: string, value: any): Fail {
-  return {
-    [runtypeFailSymbol]: true,
-    reason: `${msg}, value: ${debugValue(value)}${currentKey()}`,
+export function fail(
+  failOrThrow: typeof runtypeFailSymbol | undefined,
+  msg: string,
+  value: any,
+): any {
+  if (failOrThrow === undefined) {
+    // runtype check failed
+    throw new RuntypeError(msg)
+  } else if (failOrThrow === runtypeFailSymbol) {
+    // runtype check failed but it should not throw an exception bc its called
+    // internally e.g. as part of a union or because we want to add debug info
+    // while unrolling the stack
+    return {
+      [runtypeFailSymbol]: true,
+      reason: `${msg}, value: ${debugValue(value)}${currentKey()}`,
+    }
+  } else {
+    throw new Error(
+      `failOrThrow must be undefined or the runtypeFailSymbol, not ${JSON.stringify(
+        failOrThrow,
+      )}`,
+    )
   }
-}
+} // TODO rename to 'internalFail' and create a public fail that always returns 'Fail' also create an internalRuntype and external runtype ctor that wraps the user-supplied-fn so that it raises on fail depending on failOrThrow arg
 
 /**
  * Check whether a value is a failure.
@@ -69,49 +87,43 @@ export function isFail(v: unknown): v is Fail {
  */
 export interface Runtype<T> {
   // a function to check that v 'conforms' to type T
-  (v: unknown): T | Fail
-  check(value: unknown): T
+  (v: unknown): T
 }
 
 /**
  * Construct a runtype from a validation function.
  */
-export function runtype<T>(fn: (v: unknown) => T | Fail): Runtype<T> {
-  const rt: Runtype<T> = <any>fn
+export function runtype<T>(
+  fn: (v: unknown, failOrThrow?: typeof runtypeFailSymbol) => T,
+): Runtype<T> {
+  return fn
+} // TODO: rename into 'internalRuntype'
 
-  rt.check = (v: unknown) => {
-    const res = fn(v)
-
-    if (isFail(res)) {
-      throw new RuntypeError(res.reason)
-    }
-
-    return res
-  }
-
-  return rt
-}
+type InternalRuntype = (
+  v: unknown,
+  failOrThrow: typeof runtypeFailSymbol | undefined,
+) => any
 
 /// basic types
 
-export const numberRuntype = runtype((v) => {
+export const numberRuntype = runtype((v, failOrThrow) => {
   if (typeof v === 'number') {
     return v
   }
 
-  return fail('expected a number', v)
+  return fail(failOrThrow, 'expected a number', v)
 })
 
-export const nonNaNnumberRuntype = runtype((v) => {
+export const nonNaNnumberRuntype = runtype((v, failOrThrow) => {
   if (typeof v === 'number') {
     if (isNaN(v)) {
-      return fail('expected a number and not NaN', v)
+      return fail(failOrThrow, 'expected a number and not NaN', v)
     }
 
     return v
   }
 
-  return fail('expected a number', v)
+  return fail(failOrThrow, 'expected a number', v)
 })
 
 /**
@@ -123,7 +135,7 @@ export function number(allowNaN: boolean = false): Runtype<number> {
   return allowNaN ? numberRuntype : nonNaNnumberRuntype
 }
 
-export const integerRuntype = runtype((v: unknown) => {
+export const integerRuntype = runtype<number>((v, failOrThrow) => {
   if (
     typeof v === 'number' &&
     Number.isInteger(v) &&
@@ -133,28 +145,36 @@ export const integerRuntype = runtype((v: unknown) => {
     return v
   }
 
-  return fail('expected an integer', v)
+  return fail(failOrThrow, 'expected an integer', v)
 })
 
 /**
  * A number without decimals and within +-MAX_SAFE_INTEGER.
  */
-export function integer(): Runtype<number> {
+export function integer() {
   return integerRuntype
 }
 
-export const stringAsIntegerRuntype = runtype((v) => {
+export const stringAsIntegerRuntype = runtype<number>((v, failOrThrow) => {
   if (typeof v === 'string') {
     const parsedNumber = parseInt(v, 10)
-    const n = integerRuntype(parsedNumber)
+    const n = (integerRuntype as InternalRuntype)(
+      parsedNumber,
+      runtypeFailSymbol,
+    )
 
     if (isFail(n)) {
-      return n
+      return fail(
+        failOrThrow,
+        `expected value to contain an integer: ${n.reason}`,
+        v,
+      )
     }
 
     // ensure that value did only contain that integer, nothing else
     if (n.toString() !== v) {
       return fail(
+        failOrThrow,
         'expected string to contain only the integer, not additional characters',
         v,
       )
@@ -163,7 +183,7 @@ export const stringAsIntegerRuntype = runtype((v) => {
     return n
   }
 
-  return fail('expected a string that contains an integer', v)
+  return fail(failOrThrow, 'expected a string that contains an integer', v)
 })
 
 /**
@@ -173,33 +193,33 @@ export function stringAsInteger(): Runtype<number> {
   return stringAsIntegerRuntype
 }
 
-const booleanRuntype = runtype((v) => {
+const booleanRuntype = runtype<boolean>((v, failOrThrow) => {
   if (v === true || v === false) {
     return v
   }
 
-  return fail('expected a boolean', v)
+  return fail(failOrThrow, 'expected a boolean', v)
 })
 
 /**
  * A boolean.
  */
-export function boolean(): Runtype<boolean> {
+export function boolean() {
   return booleanRuntype
 }
 
-const stringRuntype = runtype((v) => {
+const stringRuntype = runtype<string>((v, failOrThrow) => {
   if (typeof v === 'string') {
     return v
   }
 
-  return fail('expected a string', v)
+  return fail(failOrThrow, 'expected a string', v)
 })
 
 /**
  * A string.
  */
-export function string(): Runtype<string> {
+export function string() {
   return stringRuntype
 }
 
@@ -210,14 +230,16 @@ export function literal<T extends string>(literal: T): Runtype<T>
 export function literal<T extends number>(literal: T): Runtype<T>
 export function literal<T extends boolean>(literal: T): Runtype<T>
 export function literal(literal: string | number | boolean): Runtype<any> {
-  const rt: any = runtype((v: unknown) => {
+  const rt: any = runtype((v, failOrThrow) => {
     if (v === literal) {
       return literal
     }
 
-    return fail(`expected a literal: ${debugValue(literal)}`, v)
+    return fail(failOrThrow, `expected a literal: ${debugValue(literal)}`, v)
   })
 
+  // keep the literal as metadata on the runtype itself to be able to use it
+  // in record intersections to determine the right record runtype
   rt.literal = literal
 
   return rt
@@ -245,7 +267,7 @@ export function any(): Runtype<any> {
  * A value to ignore (typed as unknown and always set to undefined).
  */
 export function ignore(): Runtype<unknown> {
-  return runtype((_v: unknown) => {
+  return runtype((_v) => {
     return undefined as unknown
   })
 }
@@ -258,7 +280,7 @@ type EnumObject = { [key: string]: string | number }
 export function enumValue<T extends EnumObject, S extends keyof T>(
   enumObject: T,
 ): Runtype<T[S]> {
-  return runtype((v) => {
+  return runtype((v, failOrThrow) => {
     // use the fast reverse lookup of number enums to check whether v is a
     // value of the enum
     if (typeof v === 'number' && (enumObject as any)[v as any] !== undefined) {
@@ -270,6 +292,7 @@ export function enumValue<T extends EnumObject, S extends keyof T>(
     }
 
     return fail(
+      failOrThrow,
       `expected a value that belongs to the enum ${debugValue(enumObject)}`,
       v,
     )
@@ -322,9 +345,9 @@ export function stringLiteralUnion<
 export function stringLiteralUnion(...values: string[]): any {
   const valuesIndex = new Set(values)
 
-  return runtype((v: unknown) => {
+  return runtype((v, failOrThrow) => {
     if (typeof v !== 'string' || !valuesIndex.has(v)) {
-      return fail(`expected one of ${values}`, v)
+      return fail(failOrThrow, `expected one of ${values}`, v)
     }
 
     return v
@@ -333,20 +356,20 @@ export function stringLiteralUnion(...values: string[]): any {
 
 /// containers
 
-export const arrayRuntype = runtype((v: unknown): unknown[] | Fail => {
+export const arrayRuntype = runtype<unknown[]>((v, failOrThrow) => {
   if (Array.isArray(v)) {
     return v
   }
 
-  return fail(`expected an Array`, v)
+  return fail(failOrThrow, `expected an Array`, v)
 })
 
 /**
  * An array.
  */
 export function array<A>(a: Runtype<A>): Runtype<A[]> {
-  return runtype((v: unknown) => {
-    const arrayValue = arrayRuntype(v)
+  return runtype<any>((v, failOrThrow) => {
+    const arrayValue = (arrayRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(arrayValue)) {
       return arrayValue
@@ -354,11 +377,11 @@ export function array<A>(a: Runtype<A>): Runtype<A[]> {
 
     const res: A[] = new Array(arrayValue.length)
 
-    for (let i in arrayValue) {
-      const item = a(arrayValue[i])
+    for (let i = 0; i < arrayValue.length; i++) {
+      const item = (a as InternalRuntype)(arrayValue[i], runtypeFailSymbol)
 
       if (isFail(item)) {
-        return item
+        return fail(failOrThrow, item.reason || '', v)
       }
 
       res[i] = item
@@ -392,24 +415,24 @@ export function tuple<A, B, C, D, E>(
   e: Runtype<E>,
 ): Runtype<[A, B, C, D, E]>
 export function tuple(...types: Runtype<any>[]): Runtype<any> {
-  return runtype((v: unknown) => {
-    const a = arrayRuntype(v)
+  return runtype<any>((v, failOrThrow) => {
+    const a = (arrayRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(a)) {
       return a
     }
 
     if (a.length !== types.length) {
-      return fail('array does not have the required length', v)
+      return fail(failOrThrow, 'array does not have the required length', v)
     }
 
     const res: any[] = []
 
-    for (let i in types) {
-      const item = types[i](a[i])
+    for (let i = 0; i < types.length; i++) {
+      const item = (types[i] as InternalRuntype)(a[i], runtypeFailSymbol)
 
       if (isFail(item)) {
-        return item
+        return fail(failOrThrow, item.reason || '', v)
       }
 
       res.push(item)
@@ -420,12 +443,12 @@ export function tuple(...types: Runtype<any>[]): Runtype<any> {
 }
 
 // cached object runtype
-export const objectRuntype = runtype((v: unknown) => {
+export const objectRuntype = runtype<object>((v, failOrThrow) => {
   if (typeof v === 'object' && !Array.isArray(v) && v !== null) {
     return v
   }
 
-  return fail('expected an object', v)
+  return fail(failOrThrow, 'expected an object', v)
 })
 
 /**
@@ -439,8 +462,8 @@ export function object(): Runtype<object> {
  * An index with string keys.
  */
 export function stringIndex<T>(t: Runtype<T>): Runtype<{ [key: string]: T }> {
-  return runtype((v) => {
-    const o: any = objectRuntype(v)
+  return runtype<any>((v, failOrThrow) => {
+    const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(o)) {
       return o
@@ -449,13 +472,15 @@ export function stringIndex<T>(t: Runtype<T>): Runtype<{ [key: string]: T }> {
     const res: { [key: string]: T } = {}
 
     for (let k in o) {
-      const value = t(o[k])
+      if (o.hasOwnProperty(k)) {
+        const value = (t as InternalRuntype)(o[k], runtypeFailSymbol)
 
-      if (isFail(value)) {
-        return value
+        if (isFail(value)) {
+          return fail(failOrThrow, value.reason || '', v)
+        }
+
+        res[k] = value
       }
-
-      res[k] = value
     }
 
     return res
@@ -466,8 +491,8 @@ export function stringIndex<T>(t: Runtype<T>): Runtype<{ [key: string]: T }> {
  * An index with number keys.
  */
 export function numberIndex<T>(t: Runtype<T>): Runtype<{ [key: number]: T }> {
-  return runtype((v) => {
-    const o: any = objectRuntype(v)
+  return runtype<any>((v, failOrThrow) => {
+    const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(o)) {
       return o
@@ -476,16 +501,16 @@ export function numberIndex<T>(t: Runtype<T>): Runtype<{ [key: number]: T }> {
     const res: { [key: number]: T } = {}
 
     for (let k in o) {
-      const key = stringAsIntegerRuntype(k)
+      const key = (stringAsIntegerRuntype as InternalRuntype)(k, failOrThrow)
 
       if (isFail(key)) {
         return key
       }
 
-      const value = t(o[key])
+      const value = (t as InternalRuntype)(o[key], runtypeFailSymbol)
 
       if (isFail(value)) {
-        return value
+        return fail(failOrThrow, value.reason || '', v)
       }
 
       res[key] = value
@@ -501,8 +526,8 @@ export function numberIndex<T>(t: Runtype<T>): Runtype<{ [key: number]: T }> {
 export function record<T extends object>(
   typemap: { [K in keyof T]: Runtype<T[K]> },
 ): Runtype<T> {
-  const rt: Runtype<T> = <any>runtype((v: unknown) => {
-    const o: any = objectRuntype(v)
+  const rt: Runtype<T> = <any>runtype((v, failOrThrow) => {
+    const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(o)) {
       return o
@@ -518,10 +543,11 @@ export function record<T extends object>(
     for (const k in typemap) {
       _currentKey = k
 
-      const value = typemap[k](o[k])
+      // nested types should always fail with explicit `Fail` so we can add additional data
+      const value = (typemap[k] as InternalRuntype)(o[k], runtypeFailSymbol)
 
       if (isFail(value)) {
-        return value
+        return fail(failOrThrow, value.reason || '', v)
       }
 
       res[k] = value
@@ -532,12 +558,13 @@ export function record<T extends object>(
     const unknownKeys = Object.keys(o).filter((k) => !res.hasOwnProperty(k))
 
     if (unknownKeys.length) {
-      return fail('invalid keys in record', unknownKeys)
+      return fail(failOrThrow, 'invalid keys in record', unknownKeys)
     }
 
     return res
   })
 
+  // fields metadata to implement combinators like pick, omit and intersection
   const fields: { [key: string]: any } = {}
 
   for (const k in typemap) {
@@ -553,9 +580,9 @@ export function record<T extends object>(
  * A runtype based on a type guard
  */
 export function guardedBy<F>(typeGuard: (v: unknown) => v is F): Runtype<F> {
-  return runtype((v: unknown) => {
+  return runtype((v, failOrThrow) => {
     if (!typeGuard(v)) {
-      return fail('expected typeguard to return true', v)
+      return fail(failOrThrow, 'expected typeguard to return true', v)
     }
 
     return v
@@ -566,12 +593,12 @@ export function guardedBy<F>(typeGuard: (v: unknown) => v is F): Runtype<F> {
  * Optional (?)
  */
 export function optional<A>(t: Runtype<A>): Runtype<undefined | A> {
-  return runtype((v: unknown) => {
+  return runtype((v, failOrThrow) => {
     if (v === undefined) {
       return undefined
     }
 
-    return t(v)
+    return (t as InternalRuntype)(v, failOrThrow)
   })
 }
 
@@ -579,12 +606,12 @@ export function optional<A>(t: Runtype<A>): Runtype<undefined | A> {
  * A type or null.
  */
 export function nullable<A>(t: Runtype<A>): Runtype<null | A> {
-  return runtype((v: unknown) => {
+  return runtype((v, failOrThrow) => {
     if (v === null) {
       return null
     }
 
-    return t(v)
+    return (t as InternalRuntype)(v, failOrThrow)
   })
 }
 
@@ -705,8 +732,8 @@ export function discriminatedUnion(...args: any[]): Runtype<any> {
     typeMap.set(tagValue, t)
   })
 
-  return runtype((v: unknown) => {
-    const o: any = objectRuntype(v)
+  return runtype((v, failOrThrow) => {
+    const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(o)) {
       return o
@@ -717,6 +744,7 @@ export function discriminatedUnion(...args: any[]): Runtype<any> {
 
     if (rt === undefined) {
       return fail(
+        failOrThrow,
         `no Runtype found for discriminated union tag ${key}: ${debugValue(
           tagValue,
         )}`,
@@ -724,7 +752,7 @@ export function discriminatedUnion(...args: any[]): Runtype<any> {
       )
     }
 
-    return rt(v)
+    return (rt as InternalRuntype)(v, failOrThrow)
   })
 }
 
@@ -751,11 +779,15 @@ export function union<A, B, C, D, E>(
   e: Runtype<E>,
 ): Runtype<A | B | C | D | E>
 export function union(...runtypes: Runtype<any>[]): Runtype<any> {
-  return runtype((v) => {
+  if (!runtypes.length) {
+    throw new Error('no runtypes given to union')
+  }
+
+  return runtype((v, failOrThrow) => {
     let lastFail: Fail | undefined
 
-    for (let i in runtypes) {
-      const val = runtypes[i](v)
+    for (let i = 0; i < runtypes.length; i++) {
+      const val = (runtypes[i] as InternalRuntype)(v, runtypeFailSymbol)
 
       if (!isFail(val)) {
         return val
@@ -764,11 +796,11 @@ export function union(...runtypes: Runtype<any>[]): Runtype<any> {
       }
     }
 
-    if (!lastFail) {
-      throw new Error('no runtypes given to union')
-    }
-
-    return lastFail
+    return fail(
+      failOrThrow,
+      `union failed with: ${JSON.stringify(lastFail?.reason)}`,
+      v,
+    )
   })
 }
 
@@ -800,14 +832,13 @@ function recordIntersection<A, B>(
  * An intersection of two runtypes
  */
 function intersection2<A, B>(a: Runtype<A>, b: Runtype<B>): Runtype<A & B>
-function intersection2<A, B>(a: Runtype<A>, b: Runtype<B>): Runtype<A & B>
 function intersection2(a: Runtype<any>, b: Runtype<any>): Runtype<any> {
   if ('fields' in a && 'fields' in b) {
     return recordIntersection(a, b)
   } else {
-    return runtype((v) => {
-      const valFromA = a(v)
-      const valFromB = b(v)
+    return runtype((v, failOrThrow) => {
+      const valFromA = (a as InternalRuntype)(v, failOrThrow)
+      const valFromB = (b as InternalRuntype)(v, failOrThrow)
 
       if (isFail(valFromB)) {
         return valFromB

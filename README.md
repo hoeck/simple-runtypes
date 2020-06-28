@@ -1,27 +1,45 @@
-# TSDX Bootstrap
+## Preface
 
-This project was bootstrapped with [TSDX](https://github.com/jaredpalmer/tsdx).
+I said I want **SIMPLE** runtypes.
+Just functions that validate and return data.
+Combine them into complex types and Typescript knows their structure.
+Thats how runtypes work.
 
-## Local Development
+## Install
 
-Below is a list of commands you will probably find useful.
+`npm install simple-runtypes` or `yarn add simple-runtypes`
 
-### `npm start` or `yarn start`
+## Example
 
-Runs the project in development/watch mode. Your project will be rebuilt upon changes. TSDX has a special logger for you convenience. Error messages are pretty printed and formatted for compatibility VS Code's Problems tab.
 
-<img src="https://user-images.githubusercontent.com/4060187/52168303-574d3a00-26f6-11e9-9f3b-71dbec9ebfcb.gif" width="600" />
+1. Define the Runtype:
 
-Your library will be rebuilt if you make edits.
+```typescript
+import * as st from 'simple-runtypes'
 
-### `npm run build` or `yarn build`
+const userRuntype = st.record({
+    id: st.integer(),
+    name: st.string(),
+    email: st.optional(st.string()),
+})
+```
 
-Bundles the package to the `dist` folder.
-The package is optimized and bundled with Rollup into multiple formats (CommonJS, UMD, and ES Module).
+now, `ReturnType<typeof userRuntype>` is equivalent to
 
-<img src="https://user-images.githubusercontent.com/4060187/52168322-a98e5b00-26f6-11e9-8cf6-222d716b75ef.gif" width="600" />
+```typescript
+interface {
+    id: number,
+    name: string,
+    email?:string
+}
+```
 
-### `npm test` or `yarn test`
+2. Use the runtype to validate untrusted data
 
-Runs the test watcher (Jest) in an interactive mode.
-By default, runs tests related to files changed since the last commit.
+```typescript
+userRuntype({id: 1, name: 'matt'})
+// => {id: 1, name: 'matt'}
+
+userRuntype({id: 1, name: 'matt', isAdmin: true})
+// throws a st.RuntypeError 'invalid field 'isAdmin' in data
+```

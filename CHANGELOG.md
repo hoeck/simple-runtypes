@@ -1,3 +1,9 @@
+### 2.0.0
+
+- remove `.check` and make user invocations of runtypes throw exceptions
+  (using `.check` turned out to be a major annoyance and I forgot it in almost
+  half of my code bc typescript does not warn me)
+
 ### 1.0.0
 
 - add `.check` method throw a `RuntypeException`
