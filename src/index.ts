@@ -217,70 +217,113 @@ export function runtype<T>(fn: (v: unknown) => T | Fail): Runtype<T> {
 
 /// basic types
 
-export const numberRuntype = internalRuntype((v, failOrThrow) => {
-  if (typeof v === 'number') {
-    return v
-  }
+/**
+ * A number. By default reject NaN and Infinity values.
+ *
+ * Options:
+ *
+ *   allowNaN .. allow NaN values
+ *   allowInfinity .. allow positive and negative Infinity values
+ *   min .. reject numbers smaller than that
+ *   max .. reject numbers larger than that
+ */
+export function number(options?: {
+  allowNaN?: boolean
+  allowInfinity?: boolean
+  min?: number
+  max?: number
+}): Runtype<number> {
+  const { allowNaN, allowInfinity, min, max } = options || {}
 
-  return createFail(failOrThrow, 'expected a number', v)
-})
+  return internalRuntype<number>((v, failOrThrow) => {
+    if (typeof v !== 'number') {
+      return createFail(failOrThrow, 'expected a number', v)
+    }
 
-export const nonNaNnumberRuntype = internalRuntype((v, failOrThrow) => {
-  if (typeof v === 'number') {
-    if (isNaN(v)) {
-      return createFail(failOrThrow, 'expected a number and not NaN', v)
+    if (!allowNaN && isNaN(v)) {
+      return createFail(failOrThrow, 'expected a number that is not NaN', v)
+    }
+
+    if (!allowInfinity && (v === Infinity || v === -Infinity)) {
+      return createFail(failOrThrow, 'expected a finite number', v)
+    }
+
+    if (min !== undefined && v < min) {
+      return createFail(failOrThrow, `expected number to be >= ${min}`, v)
+    }
+
+    if (max !== undefined && v > max) {
+      return createFail(failOrThrow, `expected number to be <= ${max}`, v)
     }
 
     return v
-  }
-
-  return createFail(failOrThrow, 'expected a number', v)
-})
-
-/**
- * A number.
- *
- * Explicitly pass true for allowNaN to not fail on NaNs
- */
-export function number(allowNaN: boolean = false): Runtype<number> {
-  return allowNaN ? numberRuntype : nonNaNnumberRuntype
+  })
 }
 
-export const integerRuntype = internalRuntype<number>((v, failOrThrow) => {
-  if (
-    typeof v === 'number' &&
-    Number.isInteger(v) &&
-    -Number.MAX_SAFE_INTEGER <= v &&
-    v <= Number.MAX_SAFE_INTEGER
-  ) {
+const integerRuntype = internalRuntype<number>((v, failOrThrow) => {
+  if (typeof v === 'number' && Number.isSafeInteger(v)) {
     return v
   }
 
-  return createFail(failOrThrow, 'expected an integer', v)
+  return createFail(failOrThrow, 'expected a safe integer', v)
 })
 
 /**
- * A number without decimals and within +-MAX_SAFE_INTEGER.
+ * A Number that is a `isSafeInteger()`
+ *
+ * Options:
+ *
+ *   min .. reject numbers smaller than that
+ *   max .. reject number larger than that
  */
-export function integer() {
-  return integerRuntype
+export function integer(options?: { max?: number; min?: number }) {
+  if (!options) {
+    return integerRuntype
+  }
+
+  const { min, max } = options
+
+  return internalRuntype<number>((v, failOrThrow) => {
+    const n = (integerRuntype as InternalRuntype)(v, failOrThrow)
+
+    if (isFail(n)) {
+      return propagateFail(failOrThrow, n, v)
+    }
+
+    if (min !== undefined && n < min) {
+      return createFail(failOrThrow, `expected the integer to be >= ${min}`, v)
+    }
+
+    if (max !== undefined && n > max) {
+      return createFail(failOrThrow, `expected the integer to be <= ${max}`, v)
+    }
+
+    return n
+  })
 }
 
 export const stringAsIntegerRuntype = internalRuntype<number>(
   (v, failOrThrow) => {
     if (typeof v === 'string') {
       const parsedNumber = parseInt(v, 10)
-      const n = (integerRuntype as InternalRuntype)(parsedNumber, failSymbol)
+      const n: number = (integerRuntype as InternalRuntype)(
+        parsedNumber,
+        failSymbol,
+      )
 
       if (isFail(n)) {
         return propagateFail(failOrThrow, n, v)
       }
 
       // ensure that value did only contain that integer, nothing else
-      if (n.toString() !== v) {
+      // but also make '+1' === '1' and '-0' === '0'
+      const vStringSansLeadingPlus =
+        v === '-0' ? '0' : v[0] === '+' ? v.slice(1) : v
+
+      if (n.toString() !== vStringSansLeadingPlus) {
         return createFail(
           failOrThrow,
-          'expected string to contain only the integer, not additional characters',
+          'expected string to contain only the safe integer, not additional characters, whitespace or leading zeros',
           v,
         )
       }
@@ -290,17 +333,52 @@ export const stringAsIntegerRuntype = internalRuntype<number>(
 
     return createFail(
       failOrThrow,
-      'expected a string that contains an integer',
+      'expected a string that contains a safe integer',
       v,
     )
   },
 )
 
 /**
- * A string that contains an integer.
+ * A string that is parsed as an integer.
+ *
+ * Parsing is strict, e.g leading/trailing whitespace or leading zeros will
+ * result in an error. Exponential notation is not allowed. The resulting
+ * number must be a safe integer (`Number.isSafeInteger`).
+ * A leading '+' or '-' is allowed.
+ *
+ * Options:
+ *
+ *   min .. reject numbers smaller than that
+ *   max .. reject number larger than that
  */
-export function stringAsInteger(): Runtype<number> {
-  return stringAsIntegerRuntype
+export function stringAsInteger(options?: {
+  min?: number
+  max?: number
+}): Runtype<number> {
+  if (!options) {
+    return stringAsIntegerRuntype
+  }
+
+  const { min, max } = options
+
+  return internalRuntype<number>((v, failOrThrow) => {
+    const n = (stringAsIntegerRuntype as InternalRuntype)(v, failOrThrow)
+
+    if (isFail(n)) {
+      return propagateFail(failOrThrow, n, v)
+    }
+
+    if (min !== undefined && n < min) {
+      return createFail(failOrThrow, `expected the integer to be >= ${min}`, v)
+    }
+
+    if (max !== undefined && n > max) {
+      return createFail(failOrThrow, `expected the integer to be <= ${max}`, v)
+    }
+
+    return n
+  })
 }
 
 const booleanRuntype = internalRuntype<boolean>((v, failOrThrow) => {
@@ -328,9 +406,36 @@ const stringRuntype = internalRuntype<string>((v, failOrThrow) => {
 
 /**
  * A string.
+ *
+ * Options:
+ *
+ *   maxLength .. reject strings that are longer than that
+ *   trim .. when true, remove leading and trailing spaces from the string
  */
-export function string() {
-  return stringRuntype
+export function string(options?: { maxLength?: number; trim?: boolean }) {
+  if (!options) {
+    return stringRuntype
+  }
+
+  const { maxLength, trim } = options
+
+  return internalRuntype((v, failOrThrow) => {
+    const s: string = (stringRuntype as InternalRuntype)(v, failOrThrow)
+
+    if (isFail(s)) {
+      return propagateFail(failOrThrow, s, v)
+    }
+
+    if (maxLength !== undefined && s.length > maxLength) {
+      return createFail(
+        failOrThrow,
+        `expected the string length to not exceed ${maxLength}`,
+        v,
+      )
+    }
+
+    return trim ? s.trim() : s
+  })
 }
 
 /**
@@ -479,14 +584,40 @@ export const arrayRuntype = internalRuntype<unknown[]>((v, failOrThrow) => {
 })
 
 /**
- * An array.
+ * An array of a given type.
+ *
+ * Options:
+ *
+ *   minLength .. reject arrays shorter than that
+ *   maxLength .. reject arrays longer than that
  */
-export function array<A>(a: Runtype<A>): Runtype<A[]> {
+export function array<A>(
+  a: Runtype<A>,
+  options?: { maxLength?: number; minLength?: number },
+): Runtype<A[]> {
+  const { maxLength, minLength } = options || {}
+
   return internalRuntype<any>((v, failOrThrow) => {
     const arrayValue = (arrayRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(arrayValue)) {
       return propagateFail(failOrThrow, arrayValue, v)
+    }
+
+    if (maxLength !== undefined && arrayValue.length > maxLength) {
+      return createFail(
+        failOrThrow,
+        `expected the array to contain at most ${maxLength} elements`,
+        v,
+      )
+    }
+
+    if (minLength !== undefined && arrayValue.length < minLength) {
+      return createFail(
+        failOrThrow,
+        `expected the array to contain at least ${minLength} elements`,
+        v,
+      )
     }
 
     const res: A[] = new Array(arrayValue.length)

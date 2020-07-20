@@ -1,3 +1,9 @@
+### 3.0.0
+
+- add explicit options (min, max, length etc.) to `string`, `number`, `integer`, `stringAsInteger` and `array` runtypes
+- change error messages
+- improve `stringAsInteger` to accept `'-0'` and `'+123'` (leading plus) as valid integer strings
+
 ### 2.0.0
 
 - remove `.check` and make user invocations of runtypes throw exceptions

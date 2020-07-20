@@ -4,7 +4,9 @@ import * as sr from '../src'
 
 function expectAcceptValues<T>(rt: sr.Runtype<T>, values: unknown[]) {
   values.forEach((v) => {
-    expect(rt(v)).toEqual(v)
+    // use internal call protocol so that it does not raise but return sth
+    // that can be reported by jest
+    expect((rt as any)(v, sr.failSymbol)).toEqual(v)
   })
 }
 
@@ -13,11 +15,6 @@ function expectRejectValues<T>(
   values: unknown[],
   error?: string | RegExp,
 ) {
-  // when using runtypes as a normal user, they respond with throwing errors
-  values.forEach((v) => {
-    expect(() => rt(v)).toThrow(error || /.*/)
-  })
-
   // when using them internally, they return a Fail
   values.forEach((v) => {
     expect(() => (rt as any)(v, sr.failSymbol)).not.toThrow()
@@ -26,6 +23,11 @@ function expectRejectValues<T>(
       reason: expect.any(String),
       path: expect.any(Array),
     })
+  })
+
+  // when using runtypes as a normal user, they respond with throwing errors
+  values.forEach((v) => {
+    expect(() => rt(v)).toThrow(error || /.*/)
   })
 
   // when passing something that is not a failSymbol or undefined, they
@@ -68,7 +70,7 @@ function expectRejectObjectAttributes(
 
 describe('number', () => {
   it('accepts numbers', () => {
-    expectAcceptValues(sr.number(), [123, 0, -0, Infinity, -Infinity, 123e5678])
+    expectAcceptValues(sr.number(), [123, 0, -0, 123e56])
   })
 
   it('rejects non-numbers', () => {
@@ -76,6 +78,65 @@ describe('number', () => {
       sr.number(),
       ['123', '', {}, [], null, undefined],
       'expected a number',
+    )
+    expectRejectValues(sr.number(), [NaN], 'expected a number that is not NaN')
+    expectRejectValues(
+      sr.number(),
+      [Infinity, -Infinity],
+      'expected a finite number',
+    )
+  })
+
+  it('optionally allows NaN', () => {
+    const rt = sr.number({ allowNaN: true })
+
+    expectAcceptValues(rt, [123, 0, -0, 1.2, NaN])
+    expectRejectValues(
+      rt,
+      ['asd', undefined, null, Infinity, -Infinity],
+      'expected',
+    )
+  })
+
+  it('optionally allows Infinite numbers', () => {
+    const rt = sr.number({ allowInfinity: true })
+
+    expectAcceptValues(rt, [123, 0, -0, 1.123, Infinity, -Infinity])
+    expectRejectValues(rt, ['asd', undefined, null, NaN], 'expected ')
+  })
+
+  it('optionally rejects numbers smaller than x', () => {
+    const rt = sr.number({ min: 3.14 })
+
+    expectAcceptValues(rt, [123, 3.14])
+    expectRejectValues(rt, [0, -1, 3.139], 'expected number to be >= 3.14')
+    expectRejectValues(
+      rt,
+      ['asd', undefined, null, , -Infinity, Infinity, NaN],
+      'expected ',
+    )
+  })
+
+  it('optionally rejects numbers larger than x', () => {
+    const rt = sr.number({ max: -2.3 })
+
+    expectAcceptValues(rt, [-2.301, -2.3, -100, -2.3e32])
+    expectRejectValues(rt, [-2.299, -1, 3000], 'expected number to be <= -2.3')
+    expectRejectValues(
+      rt,
+      ['asd', undefined, null, +Infinity, NaN],
+      'expected ',
+    )
+  })
+
+  it('combines all options', () => {
+    const rt = sr.number({ max: 5, allowNaN: true, allowInfinity: true })
+
+    expectAcceptValues(rt, [0, -1, 5.0, -Infinity, NaN])
+    expectRejectValues(
+      rt,
+      [[+Infinity, [], '123', undefined, null]],
+      'expected ',
     )
   })
 })
@@ -93,6 +154,34 @@ describe('integer', () => {
     ])
   })
 
+  it('accepts / rejects integers with restrictions', () => {
+    expectAcceptValues(sr.integer({ min: 11 }), [11, 1234])
+    expectRejectValues(
+      sr.integer({ min: 11 }),
+      [10, 0],
+      'expected the integer to be >= 11',
+    )
+
+    expectAcceptValues(sr.integer({ max: -12 }), [-12, -100])
+    expectRejectValues(
+      sr.integer({ max: -12 }),
+      [-11, 1],
+      'expected the integer to be <=',
+    )
+
+    expectAcceptValues(sr.integer({ min: 0, max: 2 }), [0, 1, 2])
+    expectRejectValues(sr.integer({ min: 0, max: 2 }), [
+      -1,
+      1.2,
+      NaN,
+      3,
+      200,
+      'xx',
+      undefined,
+      Infinity,
+    ])
+  })
+
   it('rejects non-integers', () => {
     expectRejectValues(
       sr.integer(),
@@ -107,9 +196,9 @@ describe('integer', () => {
         null,
         { a: 1 },
         Number.MAX_SAFE_INTEGER + 1,
-        -Number.MAX_SAFE_INTEGER - 1,
+        Number.MIN_SAFE_INTEGER - 1,
       ],
-      'expected an integer',
+      'expected a safe integer',
     )
   })
 })
@@ -123,6 +212,10 @@ describe('stringAsInteger', () => {
       '123456789',
       `${Number.MAX_SAFE_INTEGER}`,
       `${-Number.MAX_SAFE_INTEGER}`,
+      '-0',
+      '+0',
+      '+123',
+      '-123',
     ]
 
     values.forEach((v) => {
@@ -133,16 +226,36 @@ describe('stringAsInteger', () => {
   it('rejects non string objects', () => {
     expectRejectValues(
       sr.stringAsInteger(),
-      [NaN, 1.1, 0.0001, Infinity, [], undefined, null, { a: 1 }],
-      'expected a string that contains an integer',
+      [
+        NaN,
+        1.1,
+        0.0001,
+        Infinity,
+        [],
+        undefined,
+        null,
+        { a: 1 },
+        ['1', '2', '3'],
+      ],
+      'expected a string that contains a safe integer',
     )
   })
 
   it('rejects string that do not contain an integer', () => {
     expectRejectValues(
       sr.stringAsInteger(),
-      ['NaN', 'Infinity', '{"asd": "f"}', '[]'],
-      'expected an integer',
+      [
+        '',
+        '-',
+        '{"asd": "f"}',
+        '[]',
+        'NaN',
+        'Infinity',
+        'undefined',
+        `${Number.MAX_SAFE_INTEGER + 1}`,
+        `${Number.MIN_SAFE_INTEGER - 1}`,
+      ],
+      'expected a safe integer',
     )
   })
 
@@ -150,14 +263,61 @@ describe('stringAsInteger', () => {
     expectRejectValues(
       sr.stringAsInteger(),
       ['123asd', '0000', '01', '-123,33', '33.44', '3e15'],
-      'expected string to contain only the integer, not additional characters',
+      'expected string to contain only the safe integer, not additional characters, whitespace or leading zeros',
     )
+  })
+
+  it('rejects stringed integers smaller than min', () => {
+    const rt = sr.stringAsInteger({ min: -20 })
+    const goodVals = ['-20', '0', '-19', '2000']
+    const badVals = ['-21', '-2000']
+
+    goodVals.forEach((v) => {
+      expect(rt(v)).toEqual(parseInt(v, 10))
+    })
+
+    expectRejectValues(rt, badVals, 'expected the integer to be >= -20')
+  })
+
+  it('rejects stringed integers larger than max', () => {
+    const rt = sr.stringAsInteger({ max: 22 })
+    const goodVals = ['22', '21', '0', '-2000']
+    const badVals = ['23', '2000']
+
+    goodVals.forEach((v) => {
+      expect(rt(v)).toEqual(parseInt(v, 10))
+    })
+
+    expectRejectValues(rt, badVals, 'expected the integer to be <= 22')
   })
 })
 
 describe('string', () => {
   it('accepts strings', () => {
     expectAcceptValues(sr.string(), ['asdf', '', '---', '\ufffe'])
+  })
+
+  it('accepts / rejects strings with restrictions', () => {
+    expectAcceptValues(sr.string({ maxLength: 3 }), [
+      '',
+      'a',
+      ' a',
+      '---',
+      '\ufffe  ',
+    ])
+
+    expectRejectValues(
+      sr.string({ maxLength: 3 }),
+      ['    ', 'xxxxx'],
+      'expected the string length to not exceed 3',
+    )
+  })
+
+  it('trims strings', () => {
+    const rt = sr.string({ trim: true })
+
+    expect(rt(' foO   ')).toEqual('foO')
+    expect(rt('foO')).toEqual('foO')
   })
 
   it('rejects non-strings', () => {
@@ -309,7 +469,35 @@ describe('array', () => {
   it('accepts valid arrays', () => {
     const runtype = sr.array(sr.number())
 
-    expectAcceptValues(runtype, [[], [1], [1, 2, 3]])
+    expectAcceptValues(runtype, [[], [1], [1, 2.2, 3.3]])
+  })
+
+  it('accepts / rejects arrays with maxLength restrictions', () => {
+    const runtype = sr.array(sr.number(), { maxLength: 2 })
+
+    expectAcceptValues(runtype, [[], [1], [1, 2]])
+    expectRejectValues(
+      runtype,
+      [
+        [1, 2, 3],
+        [1, 2, 3, 4],
+      ],
+      'expected the array to contain at most 2 elements',
+    )
+  })
+
+  it('accepts / rejects arrays with minLength restrictions', () => {
+    const runtype = sr.array(sr.number(), { minLength: 2 })
+
+    expectAcceptValues(runtype, [
+      [1, 2, 3],
+      [3, 2, 1, 0],
+    ])
+    expectRejectValues(
+      runtype,
+      [[], [0]],
+      'expected the array to contain at least 2 elements',
+    )
   })
 
   it('rejects invalid values and arrays', () => {
@@ -493,6 +681,22 @@ describe('record', () => {
     let value: { a: { b: { c: string } } }
 
     value = runtype({ a: { b: { c: 'foo' } } })
+    expect(value).toEqual({ a: { b: { c: 'foo' } } })
+  })
+
+  it('returns runtypes values', () => {
+    const runtype = sr.record({
+      a: sr.record({
+        b: sr.record({
+          c: sr.string({ trim: true }), // returns a modified string
+        }),
+      }),
+    })
+
+    let value: { a: { b: { c: string } } }
+
+    value = runtype({ a: { b: { c: '  foo  ' } } })
+
     expect(value).toEqual({ a: { b: { c: 'foo' } } })
   })
 
