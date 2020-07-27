@@ -1,3 +1,12 @@
+### 4.0.0
+
+- use copy-on-write for performance: they mostly just check their
+  input object and return it unmodified.
+  Before that, arrays and objects were always copied.
+  Now, only if the runtype or any nested runtype modifies its input
+  (e.g. trimming strings or custom runtypes), objects and arrays are copied.
+- `stringIndex` and `numberIndex` now err on `"__proto__"` and `Symbol` keys
+
 ### 3.0.0
 
 - add explicit options (min, max, length etc.) to `string`, `number`, `integer`, `stringAsInteger` and `array` runtypes
