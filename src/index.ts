@@ -181,6 +181,8 @@ export interface Runtype<T> {
   (v: unknown): T
 }
 
+const isPureRuntypeSymbol = Symbol('isPure')
+
 // The internal runtype is one that receives an additional flag that
 // determines whether the runtype should throw a RuntypeError or whether it
 // should return a Fail up to the caller.
@@ -189,10 +191,32 @@ export interface Runtype<T> {
 //   * accumulate additional path data when unwinding a fail (propagateFail)
 //   * have runtypes return a dedicated fail value to implement union over any
 //     runtypes (isFail)
+//
+// Pass `true` as isPure to signal that this runtype is not modifying its
+// value (checked with `isPureRuntype`
 function internalRuntype<T>(
   fn: (v: unknown, failOrThrow?: typeof failSymbol) => T,
+  isPure?: boolean,
 ): Runtype<T> {
-  return fn
+  if (isPure === true) {
+    return Object.assign(fn, { isPure: isPureRuntypeSymbol })
+  } else if (isPure === undefined || isPure === false) {
+    return fn
+  } else {
+    throw new RuntypeUsageError(
+      'expected "isPure" or undefined as the second argument',
+    )
+  }
+}
+
+/**
+ * A pure runtype does not change its value.
+ *
+ * A non-pure runtype may return a changed value.
+ * This is used to get rid of redundant object copying
+ */
+function isPureRuntype(fn: Runtype<any>) {
+  return !!(fn as any).isPure
 }
 
 type InternalRuntype = (
@@ -257,7 +281,7 @@ export function number(options?: {
     }
 
     return v
-  })
+  }, true)
 }
 
 const integerRuntype = internalRuntype<number>((v, failOrThrow) => {
@@ -266,7 +290,7 @@ const integerRuntype = internalRuntype<number>((v, failOrThrow) => {
   }
 
   return createFail(failOrThrow, 'expected a safe integer', v)
-})
+}, true)
 
 /**
  * A Number that is a `isSafeInteger()`
@@ -299,7 +323,7 @@ export function integer(options?: { max?: number; min?: number }) {
     }
 
     return n
-  })
+  }, true)
 }
 
 export const stringAsIntegerRuntype = internalRuntype<number>(
@@ -387,7 +411,7 @@ const booleanRuntype = internalRuntype<boolean>((v, failOrThrow) => {
   }
 
   return createFail(failOrThrow, 'expected a boolean', v)
-})
+}, true)
 
 /**
  * A boolean.
@@ -402,7 +426,7 @@ const stringRuntype = internalRuntype<string>((v, failOrThrow) => {
   }
 
   return createFail(failOrThrow, 'expected a string', v)
-})
+}, true)
 
 /**
  * A string.
@@ -418,6 +442,8 @@ export function string(options?: { maxLength?: number; trim?: boolean }) {
   }
 
   const { maxLength, trim } = options
+
+  const isPure = !trim // trim modifies the string
 
   return internalRuntype((v, failOrThrow) => {
     const s: string = (stringRuntype as InternalRuntype)(v, failOrThrow)
@@ -435,7 +461,7 @@ export function string(options?: { maxLength?: number; trim?: boolean }) {
     }
 
     return trim ? s.trim() : s
-  })
+  }, isPure)
 }
 
 /**
@@ -455,7 +481,7 @@ export function literal(literal: string | number | boolean): Runtype<any> {
       `expected a literal: ${debugValue(literal)}`,
       v,
     )
-  })
+  }, true)
 
   // keep the literal as metadata on the runtype itself to be able to use it
   // in record intersections to determine the right record runtype
@@ -470,7 +496,7 @@ export function literal(literal: string | number | boolean): Runtype<any> {
 export function unknown(): Runtype<unknown> {
   return internalRuntype((v) => {
     return v
-  })
+  }, true)
 }
 
 /**
@@ -479,7 +505,7 @@ export function unknown(): Runtype<unknown> {
 export function any(): Runtype<any> {
   return internalRuntype((v) => {
     return v as any
-  })
+  }, true)
 }
 
 /**
@@ -488,7 +514,7 @@ export function any(): Runtype<any> {
 export function ignore(): Runtype<unknown> {
   return internalRuntype((_v) => {
     return undefined as unknown
-  })
+  }, true)
 }
 
 type EnumObject = { [key: string]: string | number }
@@ -515,7 +541,7 @@ export function enumValue<T extends EnumObject, S extends keyof T>(
       `expected a value that belongs to the enum ${debugValue(enumObject)}`,
       v,
     )
-  })
+  }, true)
 }
 
 /**
@@ -570,7 +596,7 @@ export function stringLiteralUnion(...values: string[]): any {
     }
 
     return v
-  })
+  }, true)
 }
 
 /// containers
@@ -581,7 +607,7 @@ export const arrayRuntype = internalRuntype<unknown[]>((v, failOrThrow) => {
   }
 
   return createFail(failOrThrow, `expected an Array`, v)
-})
+}, true)
 
 /**
  * An array of a given type.
@@ -596,6 +622,8 @@ export function array<A>(
   options?: { maxLength?: number; minLength?: number },
 ): Runtype<A[]> {
   const { maxLength, minLength } = options || {}
+
+  const isPure = isPureRuntype(a)
 
   return internalRuntype<any>((v, failOrThrow) => {
     const arrayValue = (arrayRuntype as InternalRuntype)(v, failOrThrow)
@@ -620,7 +648,8 @@ export function array<A>(
       )
     }
 
-    const res: A[] = new Array(arrayValue.length)
+    // copy the unknown array in case the item runtype is not pure (we do not mutate anything in place)
+    const res: A[] = isPure ? arrayValue : new Array(arrayValue.length)
 
     for (let i = 0; i < arrayValue.length; i++) {
       const item = (a as InternalRuntype)(arrayValue[i], failSymbol)
@@ -629,11 +658,13 @@ export function array<A>(
         return propagateFail(failOrThrow, item, v, i)
       }
 
-      res[i] = item
+      if (!isPure) {
+        res[i] = item
+      }
     }
 
     return res
-  })
+  }, isPure)
 }
 
 /**
@@ -660,6 +691,8 @@ export function tuple<A, B, C, D, E>(
   e: Runtype<E>,
 ): Runtype<[A, B, C, D, E]>
 export function tuple(...types: Runtype<any>[]): Runtype<any> {
+  const isPure = types.every((t) => isPureRuntype(t))
+
   return internalRuntype<any>((v, failOrThrow) => {
     const a = (arrayRuntype as InternalRuntype)(v, failOrThrow)
 
@@ -675,7 +708,7 @@ export function tuple(...types: Runtype<any>[]): Runtype<any> {
       )
     }
 
-    const res: any[] = new Array(a.length)
+    const res: any[] = isPure ? a : new Array(a.length)
 
     for (let i = 0; i < types.length; i++) {
       const item = (types[i] as InternalRuntype)(a[i], failSymbol)
@@ -684,11 +717,13 @@ export function tuple(...types: Runtype<any>[]): Runtype<any> {
         return propagateFail(failOrThrow, item, v, i)
       }
 
-      res[i] = item
+      if (!isPure) {
+        res[i] = item
+      }
     }
 
     return res
-  })
+  }, isPure)
 }
 
 // cached object runtype
@@ -698,7 +733,7 @@ export const objectRuntype = internalRuntype<object>((v, failOrThrow) => {
   }
 
   return createFail(failOrThrow, 'expected an object', v)
-})
+}, true)
 
 /**
  * An object that is not an array.
@@ -711,6 +746,8 @@ export function object(): Runtype<object> {
  * An index with string keys.
  */
 export function stringIndex<T>(t: Runtype<T>): Runtype<{ [key: string]: T }> {
+  const isPure = isPureRuntype(t)
+
   return internalRuntype<any>((v, failOrThrow) => {
     const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
 
@@ -718,28 +755,50 @@ export function stringIndex<T>(t: Runtype<T>): Runtype<{ [key: string]: T }> {
       return propagateFail(failOrThrow, o, v)
     }
 
-    const res: { [key: string]: T } = {}
+    if (Object.getOwnPropertySymbols(o).length) {
+      return createFail(
+        failOrThrow,
+        `invalid key in stringIndex: ${debugValue(
+          Object.getOwnPropertySymbols(o),
+        )}`,
+        v,
+      )
+    }
+
+    const res: { [key: string]: T } = isPure ? o : {}
 
     for (let k in o) {
-      if (o.hasOwnProperty(k)) {
-        const value = (t as InternalRuntype)(o[k], failSymbol)
+      if (k === '__proto__') {
+        // e.g. someone tried to sneak __proto__ into this object and that
+        // will cause havoc when assigning it to a new object (in case its impure)
+        return createFail(
+          failOrThrow,
+          `invalid key in stringIndex: ${debugValue(k)}`,
+          v,
+        )
+      }
 
-        if (isFail(value)) {
-          return propagateFail(failOrThrow, value, v, k)
-        }
+      const value = (t as InternalRuntype)(o[k], failSymbol)
 
+      if (isFail(value)) {
+        return propagateFail(failOrThrow, value, v, k)
+      }
+
+      if (!isPure) {
         res[k] = value
       }
     }
 
     return res
-  })
+  }, isPure)
 }
 
 /**
  * An index with number keys.
  */
 export function numberIndex<T>(t: Runtype<T>): Runtype<{ [key: number]: T }> {
+  const isPure = isPureRuntype(t)
+
   return internalRuntype<any>((v, failOrThrow) => {
     const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
 
@@ -747,9 +806,29 @@ export function numberIndex<T>(t: Runtype<T>): Runtype<{ [key: number]: T }> {
       return propagateFail(failOrThrow, o, v)
     }
 
-    const res: { [key: number]: T } = {}
+    if (Object.getOwnPropertySymbols(o).length) {
+      return createFail(
+        failOrThrow,
+        `invalid key in stringIndex: ${debugValue(
+          Object.getOwnPropertySymbols(o),
+        )}`,
+        v,
+      )
+    }
+
+    const res: { [key: string]: T } = isPure ? o : {}
 
     for (let k in o) {
+      if (k === '__proto__') {
+        // e.g. someone tried to sneak __proto__ into this object and that
+        // will cause havoc when assigning it to a new object (in case its impure)
+        return createFail(
+          failOrThrow,
+          `invalid key in stringIndex: ${debugValue(k)}`,
+          v,
+        )
+      }
+
       const key = (stringAsIntegerRuntype as InternalRuntype)(k, failOrThrow)
 
       if (isFail(key)) {
@@ -762,11 +841,13 @@ export function numberIndex<T>(t: Runtype<T>): Runtype<{ [key: number]: T }> {
         return propagateFail(failOrThrow, value, v, key)
       }
 
-      res[key] = value
+      if (!isPure) {
+        res[key] = value
+      }
     }
 
     return res
-  })
+  }, true)
 }
 
 /**
@@ -775,6 +856,8 @@ export function numberIndex<T>(t: Runtype<T>): Runtype<{ [key: number]: T }> {
 export function record<T extends object>(
   typemap: { [K in keyof T]: Runtype<T[K]> },
 ): Runtype<T> {
+  const isPure = Object.values(typemap).every((t: any) => isPureRuntype(t))
+
   const rt: Runtype<T> = <any>internalRuntype((v, failOrThrow) => {
     const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
 
@@ -784,7 +867,8 @@ export function record<T extends object>(
 
     // TODO: optimize allocations: only create a copy if any of the key
     // runtypes return a different object - otherwise return value as is
-    const res = {} as T
+
+    const res = isPure ? (o as T) : ({} as T)
 
     for (const k in typemap) {
       // nested types should always fail with explicit `Fail` so we can add additional data
@@ -794,10 +878,12 @@ export function record<T extends object>(
         return propagateFail(failOrThrow, value, v, k)
       }
 
-      res[k] = value
+      if (!isPure) {
+        res[k] = value
+      }
     }
 
-    const unknownKeys = Object.keys(o).filter((k) => !res.hasOwnProperty(k))
+    const unknownKeys = Object.keys(o).filter((k) => !typemap.hasOwnProperty(k))
 
     if (unknownKeys.length) {
       return createFail(
@@ -808,7 +894,7 @@ export function record<T extends object>(
     }
 
     return res
-  })
+  }, isPure)
 
   // fields metadata to implement combinators like pick, omit and intersection
   const fields: { [key: string]: any } = {}
@@ -838,33 +924,37 @@ export function guardedBy<F>(typeGuard: (v: unknown) => v is F): Runtype<F> {
     }
 
     return v
-  })
+  }, true)
 }
 
 /**
  * Optional (?)
  */
 export function optional<A>(t: Runtype<A>): Runtype<undefined | A> {
+  const isPure = isPureRuntype(t)
+
   return internalRuntype((v, failOrThrow) => {
     if (v === undefined) {
       return undefined
     }
 
     return (t as InternalRuntype)(v, failOrThrow)
-  })
+  }, isPure)
 }
 
 /**
  * A type or null.
  */
 export function nullable<A>(t: Runtype<A>): Runtype<null | A> {
+  const isPure = isPureRuntype(t)
+
   return internalRuntype((v, failOrThrow) => {
     if (v === null) {
       return null
     }
 
     return (t as InternalRuntype)(v, failOrThrow)
-  })
+  }, isPure)
 }
 
 /**
@@ -984,6 +1074,8 @@ export function discriminatedUnion(...args: any[]): Runtype<any> {
     typeMap.set(tagValue, t)
   })
 
+  const isPure = runtypes.every((t) => isPureRuntype(t))
+
   return internalRuntype((v, failOrThrow) => {
     const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
 
@@ -1005,7 +1097,7 @@ export function discriminatedUnion(...args: any[]): Runtype<any> {
     }
 
     return (rt as InternalRuntype)(v, failOrThrow)
-  })
+  }, isPure)
 }
 
 /**
@@ -1035,6 +1127,8 @@ export function union(...runtypes: Runtype<any>[]): Runtype<any> {
     throw new RuntypeUsageError('no runtypes given to union')
   }
 
+  const isPure = runtypes.every((t) => isPureRuntype(t))
+
   return internalRuntype((v, failOrThrow) => {
     let lastFail: Fail | undefined
 
@@ -1049,7 +1143,7 @@ export function union(...runtypes: Runtype<any>[]): Runtype<any> {
     }
 
     return propagateFail(failOrThrow, lastFail as any, v)
-  })
+  }, isPure)
 }
 
 // An intersection of two record runtypes
@@ -1084,6 +1178,8 @@ function intersection2(a: Runtype<any>, b: Runtype<any>): Runtype<any> {
   if ('fields' in a && 'fields' in b) {
     return recordIntersection(a, b)
   } else {
+    const isPure = isPureRuntype(a) && isPureRuntype(b)
+
     return internalRuntype((v, failOrThrow) => {
       const valFromA = (a as InternalRuntype)(v, failOrThrow)
       const valFromB = (b as InternalRuntype)(v, failOrThrow)
@@ -1097,7 +1193,7 @@ function intersection2(a: Runtype<any>, b: Runtype<any>): Runtype<any> {
       }
 
       return valFromB // second runtype arg is preferred
-    })
+    }, isPure)
   }
 }
 

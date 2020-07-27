@@ -2,11 +2,20 @@ import * as sr from '../src'
 
 /// helpers
 
-function expectAcceptValues<T>(rt: sr.Runtype<T>, values: unknown[]) {
+function expectAcceptValuesImpure<T>(rt: sr.Runtype<T>, values: unknown[]) {
   values.forEach((v) => {
     // use internal call protocol so that it does not raise but return sth
     // that can be reported by jest
     expect((rt as any)(v, sr.failSymbol)).toEqual(v)
+    expect((rt as any)(v, sr.failSymbol)).not.toBe(v)
+  })
+}
+
+function expectAcceptValuesPure<T>(rt: sr.Runtype<T>, values: unknown[]) {
+  values.forEach((v) => {
+    // use internal call protocol so that it does not raise but return sth
+    // that can be reported by jest
+    expect((rt as any)(v, sr.failSymbol)).toBe(v)
   })
 }
 
@@ -70,7 +79,7 @@ function expectRejectObjectAttributes(
 
 describe('number', () => {
   it('accepts numbers', () => {
-    expectAcceptValues(sr.number(), [123, 0, -0, 123e56])
+    expectAcceptValuesPure(sr.number(), [123, 0, -0, 123e56])
   })
 
   it('rejects non-numbers', () => {
@@ -90,7 +99,7 @@ describe('number', () => {
   it('optionally allows NaN', () => {
     const rt = sr.number({ allowNaN: true })
 
-    expectAcceptValues(rt, [123, 0, -0, 1.2, NaN])
+    expectAcceptValuesPure(rt, [123, 0, -0, 1.2, NaN])
     expectRejectValues(
       rt,
       ['asd', undefined, null, Infinity, -Infinity],
@@ -101,14 +110,14 @@ describe('number', () => {
   it('optionally allows Infinite numbers', () => {
     const rt = sr.number({ allowInfinity: true })
 
-    expectAcceptValues(rt, [123, 0, -0, 1.123, Infinity, -Infinity])
+    expectAcceptValuesPure(rt, [123, 0, -0, 1.123, Infinity, -Infinity])
     expectRejectValues(rt, ['asd', undefined, null, NaN], 'expected ')
   })
 
   it('optionally rejects numbers smaller than x', () => {
     const rt = sr.number({ min: 3.14 })
 
-    expectAcceptValues(rt, [123, 3.14])
+    expectAcceptValuesPure(rt, [123, 3.14])
     expectRejectValues(rt, [0, -1, 3.139], 'expected number to be >= 3.14')
     expectRejectValues(
       rt,
@@ -120,7 +129,7 @@ describe('number', () => {
   it('optionally rejects numbers larger than x', () => {
     const rt = sr.number({ max: -2.3 })
 
-    expectAcceptValues(rt, [-2.301, -2.3, -100, -2.3e32])
+    expectAcceptValuesPure(rt, [-2.301, -2.3, -100, -2.3e32])
     expectRejectValues(rt, [-2.299, -1, 3000], 'expected number to be <= -2.3')
     expectRejectValues(
       rt,
@@ -132,7 +141,7 @@ describe('number', () => {
   it('combines all options', () => {
     const rt = sr.number({ max: 5, allowNaN: true, allowInfinity: true })
 
-    expectAcceptValues(rt, [0, -1, 5.0, -Infinity, NaN])
+    expectAcceptValuesPure(rt, [0, -1, 5.0, -Infinity, NaN])
     expectRejectValues(
       rt,
       [[+Infinity, [], '123', undefined, null]],
@@ -143,7 +152,7 @@ describe('number', () => {
 
 describe('integer', () => {
   it('accepts integers', () => {
-    expectAcceptValues(sr.integer(), [
+    expectAcceptValuesPure(sr.integer(), [
       1,
       2,
       -23,
@@ -155,21 +164,21 @@ describe('integer', () => {
   })
 
   it('accepts / rejects integers with restrictions', () => {
-    expectAcceptValues(sr.integer({ min: 11 }), [11, 1234])
+    expectAcceptValuesPure(sr.integer({ min: 11 }), [11, 1234])
     expectRejectValues(
       sr.integer({ min: 11 }),
       [10, 0],
       'expected the integer to be >= 11',
     )
 
-    expectAcceptValues(sr.integer({ max: -12 }), [-12, -100])
+    expectAcceptValuesPure(sr.integer({ max: -12 }), [-12, -100])
     expectRejectValues(
       sr.integer({ max: -12 }),
       [-11, 1],
       'expected the integer to be <=',
     )
 
-    expectAcceptValues(sr.integer({ min: 0, max: 2 }), [0, 1, 2])
+    expectAcceptValuesPure(sr.integer({ min: 0, max: 2 }), [0, 1, 2])
     expectRejectValues(sr.integer({ min: 0, max: 2 }), [
       -1,
       1.2,
@@ -294,11 +303,11 @@ describe('stringAsInteger', () => {
 
 describe('string', () => {
   it('accepts strings', () => {
-    expectAcceptValues(sr.string(), ['asdf', '', '---', '\ufffe'])
+    expectAcceptValuesPure(sr.string(), ['asdf', '', '---', '\ufffe'])
   })
 
   it('accepts / rejects strings with restrictions', () => {
-    expectAcceptValues(sr.string({ maxLength: 3 }), [
+    expectAcceptValuesPure(sr.string({ maxLength: 3 }), [
       '',
       'a',
       ' a',
@@ -394,8 +403,8 @@ describe('enumValue', () => {
   const stringEnum = sr.enumValue(StringEnum)
 
   it('accepts any enum value', () => {
-    expectAcceptValues(numericEnum, [1, 2, 3])
-    expectAcceptValues(stringEnum, ['foo', 'bar', 'baz'])
+    expectAcceptValuesPure(numericEnum, [1, 2, 3])
+    expectAcceptValuesPure(stringEnum, ['foo', 'bar', 'baz'])
   })
 
   it('rejects non-enum values', () => {
@@ -425,13 +434,13 @@ describe('stringLiteralUnion', () => {
   it('accepts one out of a set of literal strings', () => {
     const runtype = sr.stringLiteralUnion('a', 'b', 'c')
 
-    expectAcceptValues(runtype, ['c', 'a', 'b'])
+    expectAcceptValuesPure(runtype, ['c', 'a', 'b'])
   })
 
   it('accepts single literal string unions', () => {
     const runtype = sr.stringLiteralUnion('x')
 
-    expectAcceptValues(runtype, ['x'])
+    expectAcceptValuesPure(runtype, ['x'])
   })
 
   it('rejects all values that are not in the literal strings', () => {
@@ -457,7 +466,7 @@ describe('guardedBy', () => {
   const runtype = sr.guardedBy(guard)
 
   it('accepts valid values', () => {
-    expectAcceptValues(runtype, ['a', 'aa', ''])
+    expectAcceptValuesPure(runtype, ['a', 'aa', ''])
   })
 
   it('rejects invalid values', () => {
@@ -469,13 +478,13 @@ describe('array', () => {
   it('accepts valid arrays', () => {
     const runtype = sr.array(sr.number())
 
-    expectAcceptValues(runtype, [[], [1], [1, 2.2, 3.3]])
+    expectAcceptValuesPure(runtype, [[], [1], [1, 2.2, 3.3]])
   })
 
   it('accepts / rejects arrays with maxLength restrictions', () => {
     const runtype = sr.array(sr.number(), { maxLength: 2 })
 
-    expectAcceptValues(runtype, [[], [1], [1, 2]])
+    expectAcceptValuesPure(runtype, [[], [1], [1, 2]])
     expectRejectValues(
       runtype,
       [
@@ -489,7 +498,7 @@ describe('array', () => {
   it('accepts / rejects arrays with minLength restrictions', () => {
     const runtype = sr.array(sr.number(), { minLength: 2 })
 
-    expectAcceptValues(runtype, [
+    expectAcceptValuesPure(runtype, [
       [1, 2, 3],
       [3, 2, 1, 0],
     ])
@@ -511,19 +520,20 @@ describe('tuple', () => {
   it('accepts tuples', () => {
     const runtype = sr.tuple(sr.number(), sr.string(), sr.boolean())
 
-    expectAcceptValues(runtype, [
+    expectAcceptValuesPure(runtype, [
       [1, 'foo', true],
       [2, 'bar', false],
     ])
   })
 
-  it('always returns a new Array', () => {
-    const runtype = sr.tuple(sr.number(), sr.string(), sr.boolean())
+  it('returns a new Array if any nested runtype is impure', () => {
+    const runtype = sr.tuple(
+      sr.number(),
+      sr.string({ trim: true }),
+      sr.boolean(),
+    )
 
-    const input = [1, 'foo', false]
-    const value = runtype(input)
-
-    expect(value).not.toBe(input)
+    expectAcceptValuesImpure(runtype, [[1, 'foo', false]])
   })
 
   it('rejects invalid values', () => {
@@ -546,16 +556,13 @@ describe('stringIndex', () => {
   it('accepts string keyed objects', () => {
     const runtype = sr.stringIndex(sr.number())
 
-    expectAcceptValues(runtype, [{ a: 1, b: 2 }, { a: 1 }, { 1: 1 }, {}])
+    expectAcceptValuesPure(runtype, [{ a: 1, b: 2 }, { a: 1 }, { 1: 1 }, {}])
   })
 
-  it('always returns a new object', () => {
-    const runtype = sr.stringIndex(sr.number())
+  it('returns a new object if the runtype is impure', () => {
+    const runtype = sr.stringIndex(sr.string({ trim: true }))
 
-    const input = {}
-    const value = runtype(input)
-
-    expect(value).not.toBe(input)
+    expectAcceptValuesImpure(runtype, [{}])
   })
 
   it('rejects non-string keyed objects', () => {
@@ -570,15 +577,14 @@ describe('stringIndex', () => {
       'asd',
       [1, 2, 3],
       { 1: null },
+      JSON.parse('{ "__proto__": { "a": "foo" } }'),
+      { [Symbol()]: 10 },
       {
         foo() {
           return 1
         },
       },
     ])
-
-    // symbol keys are ignored
-    expect(runtype({ [Symbol()]: 10 })).toEqual({})
   })
 })
 
@@ -586,19 +592,16 @@ describe('numberIndex', () => {
   it('accepts string keyed objects', () => {
     const runtype = sr.numberIndex(sr.number())
 
-    expectAcceptValues(runtype, [{ 1: 100 }, { 100: 22, 101: 25 }, {}])
+    expectAcceptValuesPure(runtype, [{ 1: 100 }, { 100: 22, 101: 25 }, {}])
   })
 
-  it('always returns a new object', () => {
-    const runtype = sr.numberIndex(sr.number())
+  it('returns a new object when using an impure runtype', () => {
+    const runtype = sr.numberIndex(sr.string({ trim: true }))
 
-    const input = {}
-    const value = runtype(input)
-
-    expect(value).not.toBe(input)
+    expectAcceptValuesImpure(runtype, [{}])
   })
 
-  it('rejects non-string keyed objects', () => {
+  it('rejects non-number keyed objects', () => {
     const runtype = sr.stringIndex(sr.number())
 
     expectRejectValues(runtype, [
@@ -610,15 +613,14 @@ describe('numberIndex', () => {
       'asd',
       [1, 2, 3],
       { 1: null },
+      { [Symbol()]: 10 },
+      JSON.parse('{ "__proto__": { "123": 2 } }'),
       {
         foo() {
           return 1
         },
       },
     ])
-
-    // symbol keys are ignored
-    expect(runtype({ [Symbol()]: 10 })).toEqual({})
   })
 })
 
@@ -629,21 +631,16 @@ describe('record', () => {
       b: sr.string(),
     })
 
-    const value: { a: number; b: string } = runtype({ a: 0, b: 'foo' })
-
-    expect(value).toEqual({ a: 0, b: 'foo' })
+    expectAcceptValuesPure(runtype, [{ a: 0, b: 'foo' }])
   })
 
-  it('always returns a new object', () => {
+  it('returns a new object when nested runtypes are impure', () => {
     const runtype = sr.record({
       a: sr.integer(),
-      b: sr.string(),
+      b: sr.string({ trim: true }),
     })
 
-    const input = { a: 0, b: 'foo' }
-    const value: { a: number; b: string } = runtype(input)
-
-    expect(value).not.toBe(input)
+    expectAcceptValuesImpure(runtype, [{ a: 0, b: 'foo' }])
   })
 
   it('accepts empty records', () => {
@@ -771,7 +768,7 @@ describe('discriminatedUnion', () => {
       runtypeC,
     )
 
-    expectAcceptValues(runtypeUnion, [
+    expectAcceptValuesPure(runtypeUnion, [
       { tag: 'a_tag', id: 123 },
       { tag: Tag.B, name: 'asd' },
       { tag: 'c_tag', value: { a: 123 } },
@@ -831,7 +828,7 @@ describe('intersection', () => {
   it('should accept intersected records', () => {
     const runtype = sr.intersection(recordA, recordB)
 
-    expectAcceptValues(runtype, [
+    expectAcceptValuesPure(runtype, [
       { c: true, b: 'foo', a: 1 },
       { c: false, a: 2 },
       { c: false, b: undefined, a: 3 },
@@ -862,7 +859,7 @@ describe('union', () => {
   )
 
   it('should accept values in the union type', () => {
-    expectAcceptValues(runtype, [
+    expectAcceptValuesPure(runtype, [
       'asd',
       123,
       -1.24,
@@ -902,8 +899,8 @@ describe('pick & omit', () => {
       { a: 3, b: 'abc' },
     ]
 
-    expectAcceptValues(pickedRt, acceptedValues)
-    expectAcceptValues(omittedRt, acceptedValues)
+    expectAcceptValuesPure(pickedRt, acceptedValues)
+    expectAcceptValuesPure(omittedRt, acceptedValues)
   })
 
   it('should reject omitted/non-picked fields', () => {
@@ -960,7 +957,7 @@ describe('custom runtypes', () => {
   })
 
   it('should create a custom runtype', () => {
-    expectAcceptValues(rt, ['-', 31])
+    expectAcceptValuesPure(rt, ['-', 31])
     expectRejectValues(rt, ['31', null, 123, []])
   })
 
