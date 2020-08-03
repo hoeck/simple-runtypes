@@ -1,6 +1,6 @@
 {
   "name": "simple-runtypes",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "license": "MIT",
   "author": "Erik Söhnel",
   "repository": "github:hoeck/simple-runtypes",
@@ -29,7 +29,9 @@
   "eslintConfig": {
     "root": true,
     "parser": "@typescript-eslint/parser",
-    "plugins": ["@typescript-eslint"],
+    "plugins": [
+      "@typescript-eslint"
+    ],
     "extends": [
       "eslint:recommended",
       "plugin:@typescript-eslint/eslint-recommended",
@@ -42,7 +44,10 @@
       "no-use-before-define": "off",
       "@typescript-eslint/no-use-before-define": [
         "error",
-        { "functions": false, "classes": false }
+        {
+          "functions": false,
+          "classes": false
+        }
       ],
       "@typescript-eslint/explicit-module-boundary-types": "error",
       "@typescript-eslint/explicit-function-return-type": "off",
