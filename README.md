@@ -1,3 +1,5 @@
+![unit-tests](https://github.com/hoeck/simple-runtypes/workflows/unit-tests/badge.svg?branch=master)
+
 ## Preface
 
 I said I want **SIMPLE** runtypes.

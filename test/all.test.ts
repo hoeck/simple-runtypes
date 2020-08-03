@@ -121,7 +121,7 @@ describe('number', () => {
     expectRejectValues(rt, [0, -1, 3.139], 'expected number to be >= 3.14')
     expectRejectValues(
       rt,
-      ['asd', undefined, null, , -Infinity, Infinity, NaN],
+      ['asd', undefined, null, , -Infinity, Infinity, NaN], // eslint-disable-line no-sparse-arrays
       'expected ',
     )
   })
@@ -677,6 +677,7 @@ describe('record', () => {
 
     let value: { a: { b: { c: string } } }
 
+    // eslint-disable-next-line prefer-const
     value = runtype({ a: { b: { c: 'foo' } } })
     expect(value).toEqual({ a: { b: { c: 'foo' } } })
   })
@@ -692,6 +693,7 @@ describe('record', () => {
 
     let value: { a: { b: { c: string } } }
 
+    // eslint-disable-next-line prefer-const
     value = runtype({ a: { b: { c: '  foo  ' } } })
 
     expect(value).toEqual({ a: { b: { c: 'foo' } } })

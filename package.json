@@ -23,10 +23,35 @@
     "printWidth": 80,
     "semi": false,
     "singleQuote": true,
-    "trailingComma": "all"
+    "trailingComma": "all",
+    "arrowParens": "always"
+  },
+  "eslintConfig": {
+    "root": true,
+    "parser": "@typescript-eslint/parser",
+    "plugins": ["@typescript-eslint"],
+    "extends": [
+      "eslint:recommended",
+      "plugin:@typescript-eslint/eslint-recommended",
+      "plugin:@typescript-eslint/recommended",
+      "prettier/@typescript-eslint"
+    ],
+    "rules": {
+      "no-shadow": "error",
+      "eqeqeq": "error",
+      "no-use-before-define": "off",
+      "@typescript-eslint/no-use-before-define": [
+        "error",
+        { "functions": false, "classes": false }
+      ],
+      "@typescript-eslint/explicit-module-boundary-types": "error",
+      "@typescript-eslint/explicit-function-return-type": "off",
+      "@typescript-eslint/no-explicit-any": "off"
+    }
   },
   "devDependencies": {
     "@types/jest": "^25.2.1",
+    "eslint-plugin-prettier": "^3.1.4",
     "prettier": "^2.0.2",
     "pretty-quick": "^2.0.1",
     "tsdx": "^0.13.1",
