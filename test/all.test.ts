@@ -324,7 +324,6 @@ describe('string', () => {
 
   it('trims strings', () => {
     const rt = sr.string({ trim: true })
-    type T = ReturnType<typeof rt>
 
     expect(rt(' foO   ')).toEqual('foO')
     expect(rt('foO')).toEqual('foO')
