@@ -7,8 +7,6 @@ Just functions that validate and return data.
 Combine them into complex types and Typescript knows their structure.
 Thats how runtypes work.
 
-![unit-tests](https://github.com/hoeck/simple-runtypes/workflows/unit-tests/badge.svg)
-
 ## Install
 
 `npm install simple-runtypes` or `yarn add simple-runtypes`
