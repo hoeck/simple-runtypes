@@ -1,4 +1,4 @@
-function debugValue(v: any, maxLength: number = 512) {
+function debugValue(v: any, maxLength = 512) {
   let s: string
 
   if (v === undefined) {
@@ -28,6 +28,7 @@ export class RuntypeError extends Error {
   readonly path?: (string | number)[]
   readonly value?: any
 
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   constructor(message: string, value?: any, path?: (string | number)[]) {
     super(message)
 
@@ -40,7 +41,7 @@ export class RuntypeError extends Error {
 /**
  * Return the object path at which the error occured.
  */
-export function getFormattedErrorPath(e: RuntypeError) {
+export function getFormattedErrorPath(e: RuntypeError): string {
   if (!Array.isArray(e.path)) {
     return '(error is not a RuntypeError!)'
   }
@@ -62,7 +63,10 @@ export function getFormattedErrorPath(e: RuntypeError) {
  *
  * Cap the size of the returned string at maxLength
  */
-export function getFormattedErrorValue(e: RuntypeError, maxLength = 512) {
+export function getFormattedErrorValue(
+  e: RuntypeError,
+  maxLength = 512,
+): string {
   return debugValue(e.value, maxLength)
 }
 
@@ -71,7 +75,7 @@ export function getFormattedErrorValue(e: RuntypeError, maxLength = 512) {
  *
  * Cap the size of the returned string at maxLength
  */
-export function getFormattedError(e: RuntypeError, maxLength = 512) {
+export function getFormattedError(e: RuntypeError, maxLength = 512): string {
   return `${e.toString()} at \`value.${getFormattedErrorPath(
     e,
   )}\` in \`${getFormattedErrorValue(e, maxLength)}\``
@@ -126,23 +130,23 @@ function createFail(
 // pass the fail up to the caller or, if on top, raise the error exception
 function propagateFail(
   failOrThrow: typeof failSymbol | undefined,
-  fail: Fail,
+  failObj: Fail,
   topLevelValue?: any,
   key?: string | number,
 ) {
   if (key !== undefined) {
-    fail.path.push(key)
+    failObj.path.push(key)
   }
 
   if (failOrThrow === undefined) {
     // runtype check failed
     throw new RuntypeError(
-      fail.reason,
+      failObj.reason,
       topLevelValue,
-      fail.path.length ? fail.path.reverse() : undefined,
+      failObj.path.length ? failObj.path.reverse() : undefined,
     )
   } else if (failOrThrow === failSymbol) {
-    return fail
+    return failObj
   } else {
     throw new RuntypeUsageError(
       `failOrThrow must be undefined or the failSymbol, not ${JSON.stringify(
@@ -155,7 +159,7 @@ function propagateFail(
 /**
  * Create a runtype validation error for custom runtypes
  */
-export function fail(msg: string) {
+export function fail(msg: string): any {
   return createFail(failSymbol, msg)
 }
 
@@ -300,7 +304,10 @@ const integerRuntype = internalRuntype<number>((v, failOrThrow) => {
  *   min .. reject numbers smaller than that
  *   max .. reject number larger than that
  */
-export function integer(options?: { max?: number; min?: number }) {
+export function integer(options?: {
+  max?: number
+  min?: number
+}): Runtype<number> {
   if (!options) {
     return integerRuntype
   }
@@ -416,7 +423,7 @@ const booleanRuntype = internalRuntype<boolean>((v, failOrThrow) => {
 /**
  * A boolean.
  */
-export function boolean() {
+export function boolean(): Runtype<boolean> {
   return booleanRuntype
 }
 
@@ -436,7 +443,10 @@ const stringRuntype = internalRuntype<string>((v, failOrThrow) => {
  *   maxLength .. reject strings that are longer than that
  *   trim .. when true, remove leading and trailing spaces from the string
  */
-export function string(options?: { maxLength?: number; trim?: boolean }) {
+export function string(options?: {
+  maxLength?: number
+  trim?: boolean
+}): Runtype<string> {
   if (!options) {
     return stringRuntype
   }
@@ -467,25 +477,21 @@ export function string(options?: { maxLength?: number; trim?: boolean }) {
 /**
  * A literal (string | number | boolean).
  */
-export function literal<T extends string>(literal: T): Runtype<T>
-export function literal<T extends number>(literal: T): Runtype<T>
-export function literal<T extends boolean>(literal: T): Runtype<T>
-export function literal(literal: string | number | boolean): Runtype<any> {
+export function literal<T extends string>(lit: T): Runtype<T>
+export function literal<T extends number>(lit: T): Runtype<T>
+export function literal<T extends boolean>(lit: T): Runtype<T>
+export function literal(lit: string | number | boolean): Runtype<any> {
   const rt: any = internalRuntype((v, failOrThrow) => {
-    if (v === literal) {
-      return literal
+    if (v === lit) {
+      return lit
     }
 
-    return createFail(
-      failOrThrow,
-      `expected a literal: ${debugValue(literal)}`,
-      v,
-    )
+    return createFail(failOrThrow, `expected a literal: ${debugValue(lit)}`, v)
   }, true)
 
   // keep the literal as metadata on the runtype itself to be able to use it
   // in record intersections to determine the right record runtype
-  rt.literal = literal
+  rt.literal = lit
 
   return rt
 }
@@ -512,7 +518,7 @@ export function any(): Runtype<any> {
  * A value to ignore (typed as unknown and always set to undefined).
  */
 export function ignore(): Runtype<unknown> {
-  return internalRuntype((_v) => {
+  return internalRuntype(() => {
     return undefined as unknown
   }, true)
 }
@@ -767,7 +773,7 @@ export function stringIndex<T>(t: Runtype<T>): Runtype<{ [key: string]: T }> {
 
     const res: { [key: string]: T } = isPure ? o : {}
 
-    for (let k in o) {
+    for (const k in o) {
       if (k === '__proto__') {
         // e.g. someone tried to sneak __proto__ into this object and that
         // will cause havoc when assigning it to a new object (in case its impure)
@@ -818,7 +824,7 @@ export function numberIndex<T>(t: Runtype<T>): Runtype<{ [key: number]: T }> {
 
     const res: { [key: string]: T } = isPure ? o : {}
 
-    for (let k in o) {
+    for (const k in o) {
       if (k === '__proto__') {
         // e.g. someone tried to sneak __proto__ into this object and that
         // will cause havoc when assigning it to a new object (in case its impure)
@@ -858,7 +864,7 @@ export function record<T extends object>(
 ): Runtype<T> {
   const isPure = Object.values(typemap).every((t: any) => isPureRuntype(t))
 
-  const rt: Runtype<T> = <any>internalRuntype((v, failOrThrow) => {
+  const rt: Runtype<T> = internalRuntype((v, failOrThrow) => {
     const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(o)) {
@@ -883,7 +889,9 @@ export function record<T extends object>(
       }
     }
 
-    const unknownKeys = Object.keys(o).filter((k) => !typemap.hasOwnProperty(k))
+    const unknownKeys = Object.keys(o).filter(
+      (k) => !Object.prototype.hasOwnProperty.call(typemap, k),
+    )
 
     if (unknownKeys.length) {
       return createFail(
@@ -903,7 +911,8 @@ export function record<T extends object>(
     fields[k] = typemap[k]
   }
 
-  ;(<any>rt).fields = fields
+  // eslint-disable-next-line no-extra-semi
+  ;(rt as any).fields = fields
 
   return rt
 }
@@ -1052,8 +1061,8 @@ export function discriminatedUnion(...args: any[]): Runtype<any> {
 
   // build an index for fast runtype lookups by literal
   runtypes.forEach((t: any) => {
-    const runtype = t.fields[key]
-    const tagValue = runtype.literal
+    const rt = t.fields[key]
+    const tagValue = rt.literal
 
     if (tagValue === undefined) {
       throw new RuntypeUsageError(
@@ -1152,10 +1161,10 @@ function recordIntersection<A, B>(
   recordB: Runtype<B>,
 ): Runtype<A & B> {
   const fields: { [key: string]: Runtype<any> } = {}
-  const a = (<any>recordA).fields
-  const b = (<any>recordB).fields
+  const a = (recordA as any).fields
+  const b = (recordB as any).fields
 
-  for (let k in { ...a, ...b }) {
+  for (const k in { ...a, ...b }) {
     if (a[k] && b[k]) {
       fields[k] = intersection(a[k], b[k])
     } else if (a[k]) {
@@ -1167,7 +1176,7 @@ function recordIntersection<A, B>(
     }
   }
 
-  return <any>record(fields)
+  return record(fields) as any
 }
 
 /**
@@ -1225,7 +1234,7 @@ export function pick<T, K extends keyof T>(
   original: Runtype<T>,
   ...keys: K[]
 ): Runtype<Pick<T, K>> {
-  const fields = (<any>original).fields
+  const fields = (original as any).fields
 
   if (!fields) {
     throw new RuntypeUsageError(`expected a record runtype`)
@@ -1249,7 +1258,7 @@ export function omit<T, K extends keyof T>(
   original: Runtype<T>,
   ...keys: K[]
 ): Runtype<Omit<T, K>> {
-  const fields = (<any>original).fields
+  const fields = (original as any).fields
 
   if (!fields) {
     throw new RuntypeUsageError(`expected a record runtype`)
