@@ -1,3 +1,7 @@
+### 4.0.1
+
+- fix broken runtypes for `string` and `integer` due to missing return type annotations
+
 ### 4.0.0
 
 - use copy-on-write for performance: they mostly just check their
