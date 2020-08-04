@@ -10,6 +10,9 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     strategy:
+      # using matrix with just one OS and node version does not make much sense
+      # but that way we can copy and paste the cache steps from other actions
+      # using more oses and/or node version in their matrix
       matrix:
         os: [ubuntu-latest]
         node: [12]
