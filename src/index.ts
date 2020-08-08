@@ -858,11 +858,17 @@ export function numberIndex<T>(t: Runtype<T>): Runtype<{ [key: number]: T }> {
 
 /**
  * An object with defined keys and values.
+ *
+ * Options:
+ *
+ *   ignoreUnknownKeys .. will not complain about invalid keys in record
  */
 export function record<T extends object>(
   typemap: { [K in keyof T]: Runtype<T[K]> },
+  options?: { ignoreUnknownKeys?: boolean },
 ): Runtype<T> {
   const isPure = Object.values(typemap).every((t: any) => isPureRuntype(t))
+  const { ignoreUnknownKeys } = options ?? {}
 
   const rt: Runtype<T> = internalRuntype((v, failOrThrow) => {
     const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
@@ -889,16 +895,18 @@ export function record<T extends object>(
       }
     }
 
-    const unknownKeys = Object.keys(o).filter(
-      (k) => !Object.prototype.hasOwnProperty.call(typemap, k),
-    )
-
-    if (unknownKeys.length) {
-      return createFail(
-        failOrThrow,
-        `invalid keys in record ${debugValue(unknownKeys)}`,
-        v,
+    if (!ignoreUnknownKeys) {
+      const unknownKeys = Object.keys(o).filter(
+        (k) => !Object.prototype.hasOwnProperty.call(typemap, k),
       )
+
+      if (unknownKeys.length) {
+        return createFail(
+          failOrThrow,
+          `invalid keys in record ${debugValue(unknownKeys)}`,
+          v,
+        )
+      }
     }
 
     return res

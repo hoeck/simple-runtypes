@@ -710,6 +710,22 @@ describe('record', () => {
     ).toThrow('invalid keys in record')
   })
 
+  it('accepts records with non-mapped keys with ignoreUnknownKeys option', () => {
+    const runType = sr.record(
+      {
+        a: sr.integer(),
+        b: sr.string(),
+      },
+      { ignoreUnknownKeys: true },
+    )
+
+    expect(runType({ a: 1, b: 'foo', c: 'not-in-record-definition' })).toEqual({
+      a: 1,
+      b: 'foo',
+      c: 'not-in-record-definition',
+    })
+  })
+
   it('rejects records with object attributes', () => {
     const runType = sr.record({
       x: sr.number(),
