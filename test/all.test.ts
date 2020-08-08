@@ -461,6 +461,34 @@ describe('stringLiteralUnion', () => {
   })
 })
 
+describe('undefined', () => {
+  it('accepts undefined', () => {
+    expectAcceptValuesPure(sr.undefined(), [undefined])
+  })
+
+  it('rejects non-undefined', () => {
+    expectRejectValues(
+      sr.undefined(),
+      ['123', '', {}, [], null, 123],
+      'expected undefined',
+    )
+  })
+})
+
+describe('null', () => {
+  it('accepts null', () => {
+    expectAcceptValuesPure(sr.null(), [null])
+  })
+
+  it('rejects non-null', () => {
+    expectRejectValues(
+      sr.null(),
+      ['123', '', {}, [], undefined, 123],
+      'expected null',
+    )
+  })
+})
+
 describe('guardedBy', () => {
   const guard = (v: unknown): v is string => typeof v === 'string'
   const runtype = sr.guardedBy(guard)

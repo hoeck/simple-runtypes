@@ -497,6 +497,34 @@ export function literal(lit: string | number | boolean): Runtype<any> {
 }
 
 /**
+ * undefined
+ */
+// eslint-disable-next-line no-shadow-restricted-names
+function undefinedType(): Runtype<undefined> {
+  return internalRuntype<undefined>((v, failOrThrow) => {
+    if (v !== undefined) {
+      return createFail(failOrThrow, 'expected undefined', v)
+    }
+
+    return v
+  }, true)
+}
+
+/**
+ * null
+ */
+// eslint-disable-next-line no-shadow-restricted-names
+function nullType(): Runtype<null> {
+  return internalRuntype<null>((v, failOrThrow) => {
+    if (v !== null) {
+      return createFail(failOrThrow, 'expected null', v)
+    }
+
+    return v
+  }, true)
+}
+
+/**
  * A value to check later.
  */
 export function unknown(): Runtype<unknown> {
@@ -1273,4 +1301,5 @@ export function omit<T, K extends keyof T>(
   return record(newRecordFields)
 }
 
+export { undefinedType as undefined, nullType as null }
 // TODO: other combinators like partial, required, ...
