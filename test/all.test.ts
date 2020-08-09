@@ -733,15 +733,6 @@ describe('sloppyRecord', () => {
     expectAcceptValuesImpure(runtype, [{ a: 0, b: 'foo' }])
   })
 
-  it('returns a new object when nested runtypes are impure', () => {
-    const runtype = sr.sloppyRecord({
-      a: sr.integer(),
-      b: sr.string({ trim: true }),
-    })
-
-    expectAcceptValuesImpure(runtype, [{ a: 0, b: 'foo' }])
-  })
-
   it('accepts empty records', () => {
     const runType = sr.sloppyRecord({})
 
@@ -810,15 +801,25 @@ describe('sloppyRecord', () => {
     })
   })
 
-  it('rejects records with object attributes', () => {
+  it('ignores object attributes', () => {
     const runType = sr.sloppyRecord({
       x: sr.number(),
     })
 
     objectAttributes
       // JSON.parse bc the __proto__ attr cannot be assigned in js
-      .map((a) => JSON.parse(`{"x": 1, "${a}": "x"}`))
-      .forEach((value) => expect(runType(value)).toEqual({ x: 1 }))
+      .map((a) => ({ a, o: JSON.parse(`{"x": 1, "${a}": {"y":2}}`) }))
+      .forEach(({ a, o }) => {
+        const x = runType(o)
+        const y = runType(Object.assign({}, o))
+        expect(x).not.toBe(o)
+        expect(x).toEqual({ x: 1 })
+        expect(y).toEqual({ x: 1 })
+        expect((x as any).y).toBeUndefined()
+        expect((y as any).y).toBeUndefined()
+        expect(Object.prototype.hasOwnProperty.call(x, a)).toBeFalsy()
+        expect(Object.prototype.hasOwnProperty.call(y, a)).toBeFalsy()
+      })
   })
 })
 
