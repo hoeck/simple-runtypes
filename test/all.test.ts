@@ -710,22 +710,6 @@ describe('record', () => {
     ).toThrow('invalid keys in record')
   })
 
-  it('accepts records with non-mapped keys with ignoreUnknownKeys option', () => {
-    const runType = sr.record(
-      {
-        a: sr.integer(),
-        b: sr.string(),
-      },
-      { ignoreUnknownKeys: true },
-    )
-
-    expect(runType({ a: 1, b: 'foo', c: 'not-in-record-definition' })).toEqual({
-      a: 1,
-      b: 'foo',
-      c: 'not-in-record-definition',
-    })
-  })
-
   it('rejects records with object attributes', () => {
     const runType = sr.record({
       x: sr.number(),
@@ -736,6 +720,105 @@ describe('record', () => {
       // JSON.parse bc the __proto__ attr cannot be assigned in js
       objectAttributes.map((a) => JSON.parse(`{"x": 1, "${a}": "x"}`)),
     )
+  })
+})
+
+describe('sloppyRecord', () => {
+  it('accepts simple records', () => {
+    const runtype = sr.sloppyRecord({
+      a: sr.integer(),
+      b: sr.string(),
+    })
+
+    expectAcceptValuesImpure(runtype, [{ a: 0, b: 'foo' }])
+  })
+
+  it('returns a new object when nested runtypes are impure', () => {
+    const runtype = sr.sloppyRecord({
+      a: sr.integer(),
+      b: sr.string({ trim: true }),
+    })
+
+    expectAcceptValuesImpure(runtype, [{ a: 0, b: 'foo' }])
+  })
+
+  it('accepts empty records', () => {
+    const runType = sr.sloppyRecord({})
+
+    const value: {} = runType({})
+
+    expect(value).toEqual({})
+  })
+
+  it('accepts records with optional values', () => {
+    const runtype = sr.sloppyRecord({
+      a: sr.integer(),
+      b: sr.optional(sr.string()),
+    })
+
+    let value: { a: number; b?: string }
+
+    value = runtype({ a: 0, b: 'foo' })
+    expect(value).toEqual({ a: 0, b: 'foo' })
+
+    value = runtype({ a: 0, b: undefined })
+    expect(value).toEqual({ a: 0, b: undefined })
+  })
+
+  it('accepts nested records', () => {
+    const runtype = sr.sloppyRecord({
+      a: sr.sloppyRecord({
+        b: sr.sloppyRecord({
+          c: sr.string(),
+        }),
+      }),
+    })
+
+    let value: { a: { b: { c: string } } }
+
+    // eslint-disable-next-line prefer-const
+    value = runtype({ a: { b: { c: 'foo' } } })
+    expect(value).toEqual({ a: { b: { c: 'foo' } } })
+  })
+
+  it('returns runtypes values', () => {
+    const runtype = sr.sloppyRecord({
+      a: sr.sloppyRecord({
+        b: sr.sloppyRecord({
+          c: sr.string({ trim: true }), // returns a modified string
+        }),
+      }),
+    })
+
+    let value: { a: { b: { c: string } } }
+
+    // eslint-disable-next-line prefer-const
+    value = runtype({ a: { b: { c: '  foo  ' } } })
+
+    expect(value).toEqual({ a: { b: { c: 'foo' } } })
+  })
+
+  it('returns records with known keys', () => {
+    const runType = sr.sloppyRecord({
+      a: sr.integer(),
+      b: sr.string(),
+    })
+
+    expect(runType({ a: 1, b: 'foo', c: 'not-in-record-definition' })).toEqual({
+      a: 1,
+      b: 'foo',
+    })
+  })
+
+  it('rejects records with object attributes', () => {
+    const runType = sr.sloppyRecord({
+      x: sr.number(),
+    })
+
+    objectAttributes
+      // JSON.parse bc the __proto__ attr cannot be assigned in js
+      .map((a) => JSON.parse(`{"x": 1, "${a}": "x"}`))
+      .forEach((value) => expect(runType(value)).toEqual({ x: 1 }))
   })
 })
 
