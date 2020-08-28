@@ -893,10 +893,12 @@ export function numberIndex<T>(t: Runtype<T>): Runtype<{ [key: number]: T }> {
 /**
  * An object with defined keys and values.
  */
-export function record<T extends object>(
+function internalRecord<T extends object>(
   typemap: { [K in keyof T]: Runtype<T[K]> },
+  sloppy: boolean,
 ): Runtype<T> {
   const isPure = Object.values(typemap).every((t: any) => isPureRuntype(t))
+  const copyObject = sloppy || !isPure
 
   const rt: Runtype<T> = internalRuntype((v, failOrThrow) => {
     const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
@@ -908,7 +910,7 @@ export function record<T extends object>(
     // TODO: optimize allocations: only create a copy if any of the key
     // runtypes return a different object - otherwise return value as is
 
-    const res = isPure ? (o as T) : ({} as T)
+    const res = copyObject ? ({} as T) : (o as T)
 
     for (const k in typemap) {
       // nested types should always fail with explicit `Fail` so we can add additional data
@@ -918,21 +920,23 @@ export function record<T extends object>(
         return propagateFail(failOrThrow, value, v, k)
       }
 
-      if (!isPure) {
+      if (copyObject) {
         res[k] = value
       }
     }
 
-    const unknownKeys = Object.keys(o).filter(
-      (k) => !Object.prototype.hasOwnProperty.call(typemap, k),
-    )
-
-    if (unknownKeys.length) {
-      return createFail(
-        failOrThrow,
-        `invalid keys in record ${debugValue(unknownKeys)}`,
-        v,
+    if (!sloppy) {
+      const unknownKeys = Object.keys(o).filter(
+        (k) => !Object.prototype.hasOwnProperty.call(typemap, k),
       )
+
+      if (unknownKeys.length) {
+        return createFail(
+          failOrThrow,
+          `invalid keys in record ${debugValue(unknownKeys)}`,
+          v,
+        )
+      }
     }
 
     return res
@@ -951,11 +955,17 @@ export function record<T extends object>(
   return rt
 }
 
-// TODO:
-//   export function sloppyRecord<T extends object>(
-//     typemap: { [K in keyof T]: Runtype<T[K]> },
-//   ): Runtype<T>
-// same as `record` but without the 'unknownKeys' validation
+export function record<T extends object>(
+  typemap: { [K in keyof T]: Runtype<T[K]> },
+): Runtype<T> {
+  return internalRecord(typemap, false)
+}
+
+export function sloppyRecord<T extends object>(
+  typemap: { [K in keyof T]: Runtype<T[K]> },
+): Runtype<T> {
+  return internalRecord(typemap, true)
+}
 
 /**
  * A runtype based on a type guard
