@@ -16,7 +16,8 @@
     "test": "tsdx test",
     "test:watch": "tsdx test --watchAll",
     "lint": "tsdx lint",
-    "prepare": "tsdx build"
+    "prepare": "tsdx build",
+    "build-readme": "ts-node  --compiler-options '{\"module\": \"CommonJS\"}' ./scripts/build-readme-references.ts && markdown-toc -i --maxdepth 4 README.md"
   },
   "peerDependencies": {},
   "prettier": {
@@ -57,8 +58,10 @@
   "devDependencies": {
     "@types/jest": "^25.2.1",
     "eslint-plugin-prettier": "^3.1.4",
+    "markdown-toc": "^1.2.0",
     "prettier": "^2.0.2",
     "pretty-quick": "^2.0.1",
+    "ts-node": "^9.0.0",
     "tsdx": "^0.13.1",
     "tslib": "^1.11.1",
     "typescript": "^3.8.3"
