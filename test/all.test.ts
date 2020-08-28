@@ -967,7 +967,7 @@ describe('error messages', () => {
     } catch (e) {
       expect(sr.getFormattedErrorPath(e)).toEqual('b[1].point[1]')
       expect(sr.getFormattedError(e)).toEqual(
-        'RuntypeError: expected a number at `value.b[1].point[1]` in `{"a":"foo","b":[{"point":[12,13]},{"point":[12,null]}]}`',
+        'RuntypeError: expected a number at `<value>.b[1].point[1]` in `{"a":"foo","b":[{"point":[12,13]},{"point":[12,null]}]}`',
       )
     }
   })
