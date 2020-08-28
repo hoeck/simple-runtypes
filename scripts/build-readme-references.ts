@@ -58,18 +58,34 @@ function createReadmeReferenceLinks() {
   const functionIndex = buildFunctionIndex(sourcePath)
   const readme = fs.readFileSync(readmePath).toString('utf-8')
 
-  const readmeWithLinks = readme.replace(/`\w+`/g, (match) => {
-    const functionName = match.slice(1, -1)
-    const lineNr = functionIndex.get(functionName)
+  const readmeWithLinks = readme
+    // update existing links
+    .replace(/\[`\w+`\]\(src\/index.ts#L\d+\)/g, (match, g1) => {
+      const functionName = match.slice(2, match.indexOf('`', 2))
+      const lineNr = functionIndex.get(functionName)
 
-    if (lineNr === undefined) {
-      console.log('no entry found for', match)
+      if (lineNr === undefined) {
+        console.log('no entry found for existing link', functionName, match)
 
-      return match
-    }
+        return match
+      }
 
-    return `[${match}](src/index.ts#L${lineNr})`
-  })
+      return `[${functionName}](src/index.ts#L${lineNr})`
+    })
+    // create new links
+    .replace(/[^\[]`\w+`/g, (match) => {
+      const prefixChar = match[0]
+      const functionName = match.slice(2, -1)
+      const lineNr = functionIndex.get(functionName)
+
+      if (lineNr === undefined) {
+        console.log('no entry found for', functionName, match)
+
+        return match
+      }
+
+      return `${prefixChar}[${functionName}](src/index.ts#L${lineNr})`
+    })
 
   fs.writeFileSync(readmePath, readmeWithLinks)
 }

@@ -82,11 +82,11 @@ Why should I use this over the plethora of [other](https://github.com/moltar/typ
 
 ### Intro
 
-A [[`Runtype`](src/index.ts#L187)](src/index.ts#L187) is a function that:
+A [Runtype](src/index.ts#L187) is a function that:
 
 1. receives an unknown value
 2. returns that value or a copy if all validations pass
-3. throws a [[`RuntypeError`](src/index.ts#L27)](src/index.ts#L27) when validation fails
+3. throws a [RuntypeError](src/index.ts#L27) when validation fails
 
 ```typescript
 interface Runtype<T> {
@@ -95,14 +95,14 @@ interface Runtype<T> {
 ```
 
 Runtypes are constructed by calling factory functions.
-For instance, [[`string`](src/index.ts#L450)](src/index.ts#L450) creates and retuns a string runtype.
+For instance, [string](src/index.ts#L450) creates and retuns a string runtype.
 Check the factory functions documentation for more details.
 
 ### Usage Examples
 
 #### Strict Property Checks
 
-When using [[`record`](src/index.ts#L896)](src/index.ts#L896), any properties which are not defined in the runtype will cause the runtype to fail:
+When using [record](src/index.ts#L896), any properties which are not defined in the runtype will cause the runtype to fail:
 
 ```
 const strict = st.record({name: st.string()})
@@ -111,7 +111,7 @@ strict({name: 'foo', other: 123})
 // => RuntypeError: Unknown attribute 'other'
 ```
 
-To ignore single properties, use [[`ignore`](src/index.ts#L552)](src/index.ts#L552), [[`unknown`](src/index.ts#L534)](src/index.ts#L534) or [[`any`](src/index.ts#L543)](src/index.ts#L543):
+To ignore single properties, use [ignore](src/index.ts#L552), [unknown](src/index.ts#L534) or [any](src/index.ts#L543):
 
 ```
 const strict = st.record({name: st.string(), other: st.ignore()})
@@ -129,11 +129,11 @@ strict({name: 'foo', other: 123, bar: []})
 // => {name: foo}
 ```
 
-Using any of [[`record`](src/index.ts#L896)](src/index.ts#L896) or `sloppyRecord` will keep you safe from any `__proto__` injection or overriding attempts.
+Using any of [record](src/index.ts#L896) or `sloppyRecord` will keep you safe from any `__proto__` injection or overriding attempts.
 
 #### Optional Properties
 
-Use the [[`optional`](src/index.ts#L976)](src/index.ts#L976) runtype to create [optional properties](https://www.typescriptlang.org/docs/handbook/interfaces.html#optional-properties):
+Use the [optional](src/index.ts#L976) runtype to create [optional properties](https://www.typescriptlang.org/docs/handbook/interfaces.html#optional-properties):
 
 ```
 const squareConfigRuntype = st.record({
@@ -144,7 +144,7 @@ const squareConfigRuntype = st.record({
 
 #### Nesting
 
-Collection runtypes such as [[`record`](src/index.ts#L896)](src/index.ts#L896), [[`array`](src/index.ts#L660)](src/index.ts#L660), [[`tuple`](src/index.ts#L733)](src/index.ts#L733) take runtypes as their parameters:
+Collection runtypes such as [record](src/index.ts#L896), [array](src/index.ts#L660), [tuple](src/index.ts#L733) take runtypes as their parameters:
 
 ```
 const nestedRuntype = st.record({
@@ -160,7 +160,7 @@ nestedRuntype({
 
 #### Discriminated Unions
 
-Simple-runtypes supports discriminated unions via [[`discriminatedUnion`](src/index.ts#L1091)](src/index.ts#L1091) runtype
+Simple-runtypes supports discriminated unions via [discriminatedUnion](src/index.ts#L1094) runtype
 
 The example found in the [Typescript Handbook](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#discriminating-unions) translated to simple-runtypes:
 
@@ -197,36 +197,36 @@ type NetworkState = ReturnType<networkStateRuntype>
 
 Basic runtypes that match TS / Javascript types:
 
-- [[`number`](src/index.ts#L262)](src/index.ts#L262)
-- [[`string`](src/index.ts#L450)](src/index.ts#L450)
-- [[`boolean`](src/index.ts#L430)](src/index.ts#L430)
+- [number](src/index.ts#L262)
+- [string](src/index.ts#L450)
+- [boolean](src/index.ts#L430)
 - `null`
 - `undefined`
 - `enum`
 
 Meta runtypes
 
-- [[`integer`](src/index.ts#L311)](src/index.ts#L311)
-- [[`stringAsInteger`](src/index.ts#L390)](src/index.ts#L390)
-- [[`ignore`](src/index.ts#L552)](src/index.ts#L552)
-- [[`unknown`](src/index.ts#L534)](src/index.ts#L534)
-- [[`any`](src/index.ts#L543)](src/index.ts#L543)
+- [integer](src/index.ts#L311)
+- [stringAsInteger](src/index.ts#L390)
+- [ignore](src/index.ts#L552)
+- [unknown](src/index.ts#L534)
+- [any](src/index.ts#L543)
 
 Objects and Array Runtypes
 
-- [[`tuple`](src/index.ts#L733)](src/index.ts#L733)
-- [[`array`](src/index.ts#L660)](src/index.ts#L660)
-- [[`record`](src/index.ts#L896)](src/index.ts#L896)
+- [tuple](src/index.ts#L733)
+- [array](src/index.ts#L660)
+- [record](src/index.ts#L896)
 - `sloppyRecord`
-- [[`numberIndex`](src/index.ts#L839)](src/index.ts#L839)
-- [[`stringIndex`](src/index.ts#L788)](src/index.ts#L788)
+- [numberIndex](src/index.ts#L839)
+- [stringIndex](src/index.ts#L788)
 
 Advanced Runtypes
 
-- [[`literal`](src/index.ts#L487)](src/index.ts#L487)
-- [[`optional`](src/index.ts#L976)](src/index.ts#L976)
-- [[`nullable`](src/index.ts#L991)](src/index.ts#L991)
-- [[`discriminatedUnion`](src/index.ts#L1091)](src/index.ts#L1091)
-- [[`union`](src/index.ts#L1168)](src/index.ts#L1168)
-- [[`intersection`](src/index.ts#L1252)](src/index.ts#L1252)
-- [[`omit`](src/index.ts#L1291)](src/index.ts#L1291)
+- [literal](src/index.ts#L487)
+- [optional](src/index.ts#L976)
+- [nullable](src/index.ts#L991)
+- [discriminatedUnion](src/index.ts#L1094)
+- [union](src/index.ts#L1171)
+- [intersection](src/index.ts#L1255)
+- [omit](src/index.ts#L1294)
