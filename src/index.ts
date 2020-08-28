@@ -12,7 +12,7 @@ function debugValue(v: any, maxLength = 512) {
   }
 
   if (s.length > maxLength) {
-    return s.slice(maxLength - 1) + '\u2026'
+    return s.slice(0, maxLength - 1) + '\u2026'
   } else {
     return s
   }
@@ -65,7 +65,7 @@ export function getFormattedErrorPath(e: RuntypeError): string {
  */
 export function getFormattedErrorValue(
   e: RuntypeError,
-  maxLength = 512,
+  maxLength = 256,
 ): string {
   return debugValue(e.value, maxLength)
 }
@@ -76,9 +76,13 @@ export function getFormattedErrorValue(
  * Cap the size of the returned string at maxLength
  */
 export function getFormattedError(e: RuntypeError, maxLength = 512): string {
-  return `${e.toString()} at \`value.${getFormattedErrorPath(
+  const rawPath = getFormattedErrorPath(e)
+  const path = rawPath ? `<value>.${rawPath}` : '<value>'
+
+  return `${e.toString()} at \`${path}\` in \`${getFormattedErrorValue(
     e,
-  )}\` in \`${getFormattedErrorValue(e, maxLength)}\``
+    maxLength,
+  )}\``
 }
 
 /**
