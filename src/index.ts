@@ -555,6 +555,8 @@ type EnumObject = { [key: string]: string | number }
 
 /**
  * Any value defined in the enumObject.
+ *
+ * TODO: rename to enum
  */
 export function enumValue<T extends EnumObject, S extends keyof T>(
   enumObject: T,
@@ -999,6 +1001,9 @@ export function nullable<A>(t: Runtype<A>): Runtype<null | A> {
  *
  * Runtypes must be created with `record(...)` which contains type metadata to
  * perform an efficient lookup of runtype functions.
+ *
+ * TODO: replace with union and make `union` identify the common key to
+ * discriminate on automatically
  */
 export function discriminatedUnion<A>(key: keyof A, a: Runtype<A>): Runtype<A>
 export function discriminatedUnion<A, B>(
