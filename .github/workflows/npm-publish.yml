@@ -1,3 +1,17 @@
+# Instructions:
+#
+# Setup:
+#
+#   1. ensure in npm account settings you have 2FA setup for authorization only or disabled
+#   2. in npm "Access Tokens" create a new token for read and publish
+#   3. in github repository "Settings" -> "Secrets" add that npm token with name "NPM_TOKEN" (as used in the action file)
+#
+# Create a New Release:
+#
+#   1. commit (and maybe push) all your changes and ensure action "unit-tests" succeeds
+#   2. create a new git version tag: `yarn version --patch` (see yarn help version for more options)
+#   3. push new tag to github: `git push --follow-tags`
+
 name: npm-publish
 
 on:
