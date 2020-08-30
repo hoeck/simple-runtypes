@@ -1,3 +1,9 @@
+### 4.1.0
+
+- fix error messages
+- add `sloppyRecord` (props to @pabra)
+- add `undefined` and `null` runtypes (props to @pabra)
+
 ### 4.0.1
 
 - fix broken runtypes for `string` and `integer` due to missing return type annotations
