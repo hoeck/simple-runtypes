@@ -230,3 +230,17 @@ Advanced Runtypes
 - [union](src/index.ts#L1171)
 - [intersection](src/index.ts#L1255)
 - [omit](src/index.ts#L1294)
+
+### Roadmap / Todos
+
+- improve docs:
+  - *preface*: what is a runtype and why is it useful
+  - *why*: explain or link to example that shows "strict by default" and "efficient discriminating unions"
+  - show that simple-runtypes is feature complete because it can
+    1. express all typescript types
+    2. is extendable with custom runtypes (add documentation)
+  - add small frontend and backend example projects that show how to use simple-runtypes in production
+- get rid of `discriminatedUnion` and make `union` determine the type tag attribute automatically
+- refactoring: generic type definitions (get rid of function overloads for tuple, union, ...)
+- refactoring: single file per runtype
+- test types with [tsd](https://github.com/SamVerschueren/tsd)
