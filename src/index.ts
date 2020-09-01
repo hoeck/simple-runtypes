@@ -587,47 +587,9 @@ export function enumValue<T extends EnumObject, S extends keyof T>(
 /**
  * A union of string literals.
  */
-export function stringLiteralUnion<A extends string>(a: A): Runtype<A>
-export function stringLiteralUnion<A extends string, B extends string>(
-  a: A,
-  b: B,
-): Runtype<A | B>
-export function stringLiteralUnion<
-  A extends string,
-  B extends string,
-  C extends string
->(a: A, b: B, c: C): Runtype<A | B | C>
-export function stringLiteralUnion<
-  A extends string,
-  B extends string,
-  C extends string,
-  D extends string
->(a: A, b: B, c: C, d: D): Runtype<A | B | C | D>
-export function stringLiteralUnion<
-  A extends string,
-  B extends string,
-  C extends string,
-  D extends string,
-  E extends string
->(a: A, b: B, c: C, d: D, e: E): Runtype<A | B | C | D | E>
-export function stringLiteralUnion<
-  A extends string,
-  B extends string,
-  C extends string,
-  D extends string,
-  E extends string,
-  F extends string
->(a: A, b: B, c: C, d: D, e: E, f: F): Runtype<A | B | C | D | E | F>
-export function stringLiteralUnion<
-  A extends string,
-  B extends string,
-  C extends string,
-  D extends string,
-  E extends string,
-  F extends string,
-  G extends string
->(a: A, b: B, c: C, d: D, e: E, f: F, g: G): Runtype<A | B | C | D | E | F | G>
-export function stringLiteralUnion(...values: string[]): any {
+export function stringLiteralUnion<V extends string[]>(
+  ...values: V
+): Runtype<V[number]> {
   const valuesIndex = new Set(values)
 
   return internalRuntype((v, failOrThrow) => {
@@ -707,6 +669,11 @@ export function array<A>(
   }, isPure)
 }
 
+// TODO: find a simple (not type-computationally expensive) generic tuple definition.
+// atm the one that comes closest would be: https://github.com/Microsoft/TypeScript/issues/13298#issuecomment-675386981
+// For now, keep the tuple definition simple as I don't see a usecase for big
+// (>5elements) tuples. Most of the time I use them only for simple [lat, lon],
+// [x,y,z] and other vectors.
 /**
  * A tuple.
  */
@@ -907,9 +874,8 @@ function internalRecord<T extends object>(
       return propagateFail(failOrThrow, o, v)
     }
 
-    // TODO: optimize allocations: only create a copy if any of the key
-    // runtypes return a different object - otherwise return value as is
-
+    // optimize allocations: only create a copy if any of the key runtypes
+    // return a different object - otherwise return value as is
     const res = copyObject ? ({} as T) : (o as T)
 
     for (const k in typemap) {
@@ -942,7 +908,8 @@ function internalRecord<T extends object>(
     return res
   }, isPure)
 
-  // fields metadata to implement combinators like pick, omit and intersection
+  // fields metadata to implement combinators like (discriminated) unions,
+  // pick, omit and intersection
   const fields: { [key: string]: any } = {}
 
   for (const k in typemap) {
@@ -953,6 +920,18 @@ function internalRecord<T extends object>(
   ;(rt as any).fields = fields
 
   return rt
+}
+
+function getRecordFields(
+  r: Runtype<any>,
+): { [key: string]: Runtype<any> } | undefined {
+  const anyRt: any = r
+
+  if (!anyRt.fields) {
+    return
+  }
+
+  return anyRt.fields
 }
 
 export function record<T extends object>(
@@ -1010,100 +989,16 @@ export function nullable<A>(t: Runtype<A>): Runtype<null | A> {
   }, isPure)
 }
 
-/**
- * A tagged union with type discriminant 'key'.
- *
- * Runtypes must be created with `record(...)` which contains type metadata to
- * perform an efficient lookup of runtype functions.
- *
- * TODO: replace with union and make `union` identify the common key to
- * discriminate on automatically
- */
-export function discriminatedUnion<A>(key: keyof A, a: Runtype<A>): Runtype<A>
-export function discriminatedUnion<A, B>(
-  key: keyof (A | B),
-  a: Runtype<A>,
-  b: Runtype<B>,
-): Runtype<A | B>
-export function discriminatedUnion<A, B, C>(
-  key: keyof (A | B | C),
-  a: Runtype<A>,
-  b: Runtype<B>,
-  c: Runtype<C>,
-): Runtype<A | B | C>
-export function discriminatedUnion<A, B, C, D>(
-  key: keyof (A | B | C | D),
-  a: Runtype<A>,
-  b: Runtype<B>,
-  c: Runtype<C>,
-  d: Runtype<D>,
-): Runtype<A | B | C | D>
-export function discriminatedUnion<A, B, C, D, E>(
-  key: keyof (A | B | C | D | E),
-  a: Runtype<A>,
-  b: Runtype<B>,
-  c: Runtype<C>,
-  d: Runtype<D>,
-  e: Runtype<E>,
-): Runtype<A | B | C | D | E>
-export function discriminatedUnion<A, B, C, D, E, F>(
-  key: keyof (A | B | C | D | F),
-  a: Runtype<A>,
-  b: Runtype<B>,
-  c: Runtype<C>,
-  d: Runtype<D>,
-  e: Runtype<E>,
-  f: Runtype<F>,
-): Runtype<A | B | C | D | E | F>
-export function discriminatedUnion<A, B, C, D, E, F, G>(
-  key: keyof (A | B | C | D | F | G),
-  a: Runtype<A>,
-  b: Runtype<B>,
-  c: Runtype<C>,
-  d: Runtype<D>,
-  e: Runtype<E>,
-  f: Runtype<F>,
-  g: Runtype<G>,
-): Runtype<A | B | C | D | E | F | G>
-export function discriminatedUnion<A, B, C, D, E, F, G, H>(
-  key: keyof (A | B | C | D | F | G | H),
-  a: Runtype<A>,
-  b: Runtype<B>,
-  c: Runtype<C>,
-  d: Runtype<D>,
-  e: Runtype<E>,
-  f: Runtype<F>,
-  g: Runtype<G>,
-  h: Runtype<H>,
-): Runtype<A | B | C | D | E | F | G | H>
-export function discriminatedUnion<A, B, C, D, E, F, G, H, I>(
-  key: keyof (A | B | C | D | F | G | H | I),
-  a: Runtype<A>,
-  b: Runtype<B>,
-  c: Runtype<C>,
-  d: Runtype<D>,
-  e: Runtype<E>,
-  f: Runtype<F>,
-  g: Runtype<G>,
-  h: Runtype<H>,
-  i: Runtype<I>,
-): Runtype<A | B | C | D | E | F | G | H | I>
-export function discriminatedUnion<A, B, C, D, E, F, G, H, I, J>(
-  key: keyof (A | B | C | D | F | G | H | I | J),
-  a: Runtype<A>,
-  b: Runtype<B>,
-  c: Runtype<C>,
-  d: Runtype<D>,
-  e: Runtype<E>,
-  f: Runtype<F>,
-  g: Runtype<G>,
-  h: Runtype<H>,
-  i: Runtype<I>,
-  j: Runtype<J>,
-): Runtype<A | B | C | D | E | F | G | H | I | J>
-export function discriminatedUnion(...args: any[]): Runtype<any> {
-  const key: string = args[0]
-  const runtypes: Runtype<any>[] = args.slice(1)
+// A tagged union with type discriminant 'key'.
+// Runtypes must be created with `record(...)` which contains type metadata to
+// identify the literals in each record.
+// Perform an efficient lookup of runtype functions by checking the
+// discriminant key and using the runtype that matches it. This results 1
+// runtype check vs man in the naive union check implementation.
+function internalDiscriminatedUnion(
+  key: string,
+  runtypes: Runtype<any>[],
+): Runtype<any> {
   const typeMap = new Map<string | number, Runtype<any>>()
 
   // build an index for fast runtype lookups by literal
@@ -1156,35 +1051,84 @@ export function discriminatedUnion(...args: any[]): Runtype<any> {
   }, isPure)
 }
 
+// given a list of runtypes, return the name of the key that acts as the
+// unique discriminating value across all runtypes
+// return undefined if no such key exists
+function findDiscriminatingUnionKey(
+  runtypes: Runtype<any>[],
+): string | undefined {
+  const commonKeys = new Map<string, Set<string>>()
+
+  for (let i = 0; i < runtypes.length; i++) {
+    const r = runtypes[i]
+    const fields = getRecordFields(r)
+
+    if (!fields) {
+      // not a record runtype -> no common tag key
+      return
+    }
+
+    for (let f in fields) {
+      const fieldRuntype = fields[f]
+      const l = (fieldRuntype as any).literal
+
+      if (l !== undefined) {
+        // found a literal value, add it to the field
+        // if we get a distinct literalruntype, we can use the optimized
+        // index-accessed internalDiscriminatedUnion runtype
+        if (!commonKeys.has(f)) {
+          commonKeys.set(f, new Set())
+        }
+
+        commonKeys.get(f)?.add(l)
+      }
+    }
+  }
+
+  const possibleKeys: string[] = []
+
+  commonKeys.forEach((val, key) => {
+    // when the key has a unique value for each runtype it can be used as a discriminant
+    if (val.size === runtypes.length) {
+      possibleKeys.push(key)
+    }
+  })
+
+  if (!possibleKeys.length) {
+    return
+  }
+
+  // just use the first key (any key in possibleKeys would suffice)
+  return possibleKeys[0]
+}
+
+// helper type to get the type of a runtype
+type UnpackRuntypes<T extends Runtype<any>> = T extends Runtype<infer R>
+  ? R
+  : never
+
 /**
  * A union of runtypes.
  */
-export function union<A, B>(a: Runtype<A>, b: Runtype<B>): Runtype<A | B>
-export function union<A, B, C>(
-  a: Runtype<A>,
-  b: Runtype<B>,
-  c: Runtype<C>,
-): Runtype<A | B | C>
-export function union<A, B, C, D>(
-  a: Runtype<A>,
-  b: Runtype<B>,
-  c: Runtype<C>,
-  d: Runtype<D>,
-): Runtype<A | B | C | D>
-export function union<A, B, C, D, E>(
-  a: Runtype<A>,
-  b: Runtype<B>,
-  c: Runtype<C>,
-  d: Runtype<D>,
-  e: Runtype<E>,
-): Runtype<A | B | C | D | E>
-export function union(...runtypes: Runtype<any>[]): Runtype<any> {
+export function union<V extends Runtype<any>[]>(
+  ...runtypes: V
+): Runtype<UnpackRuntypes<V[number]>> {
   if (!runtypes.length) {
     throw new RuntypeUsageError('no runtypes given to union')
   }
 
+  // optimize: when the union is a discriminating union, find the
+  // discriminating key and use it to efficiently validate the union
+  const commonKey = findDiscriminatingUnionKey(runtypes)
+
+  if (commonKey !== undefined) {
+    return internalDiscriminatedUnion(commonKey, runtypes)
+  }
+
   const isPure = runtypes.every((t) => isPureRuntype(t))
 
+  // simple union validation: try all runtypes and use the first one that
+  // doesn't fail
   return internalRuntype((v, failOrThrow) => {
     let lastFail: Fail | undefined
 

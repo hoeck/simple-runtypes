@@ -891,8 +891,7 @@ describe('discriminatedUnion', () => {
   })
 
   it('should accept records that belong to the discriminatedUnion', () => {
-    const runtypeUnion: sr.Runtype<Union> = sr.discriminatedUnion(
-      'tag',
+    const runtypeUnion: sr.Runtype<Union> = sr.union(
       runtypeA,
       runtypeB,
       runtypeC,
@@ -908,12 +907,7 @@ describe('discriminatedUnion', () => {
   })
 
   it('should reject records that do not belong to the discriminatedUnion', () => {
-    const runtypeUnion: sr.Runtype<Union> = sr.discriminatedUnion(
-      'tag',
-      runtypeA,
-      runtypeB,
-      runtypeC,
-    )
+    const runtypeUnion = sr.union(runtypeA, runtypeB, runtypeC)
 
     expectRejectValues(runtypeUnion, [
       { tag: 'x_tag', id: 123 },
@@ -929,8 +923,7 @@ describe('discriminatedUnion', () => {
   })
 
   it('should reject object property names as tags', () => {
-    const runtypeUnion = sr.discriminatedUnion(
-      'key',
+    const runtypeUnion = sr.union(
       sr.record({ key: sr.literal('a'), value: sr.string() }),
       sr.record({ key: sr.literal('b'), value: sr.string() }),
     )

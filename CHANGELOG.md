@@ -1,3 +1,8 @@
+### master
+
+- remove `discriminatedUnion` - use the normal `union` instead.
+  The discriminant `key` gets inferrred automatically by `union` now.
+
 ### 4.1.0
 
 - fix error messages

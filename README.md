@@ -160,7 +160,7 @@ nestedRuntype({
 
 #### Discriminated Unions
 
-Simple-runtypes supports discriminated unions via [discriminatedUnion](src/index.ts#L1094) runtype
+Simple-runtypes supports discriminated unions via [union](src/index.ts#L1094) runtype
 
 The example found in the [Typescript Handbook](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#discriminating-unions) translated to simple-runtypes:
 
@@ -183,8 +183,7 @@ const networkSuccessState = st.record({
   })
 })
 
-const networdStateRuntype = st.discriminatedUnion(
-  'state',
+const networdStateRuntype = st.union(
   networkLoadingState,
   networkFailedState,
   networkSuccessState,
@@ -244,3 +243,4 @@ Advanced Runtypes
 - refactoring: generic type definitions (get rid of function overloads for tuple, union, ...)
 - refactoring: single file per runtype
 - test types with [tsd](https://github.com/SamVerschueren/tsd)
+- add missing combinators: partial, required
