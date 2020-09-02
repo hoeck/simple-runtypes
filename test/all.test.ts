@@ -1,13 +1,17 @@
 import * as sr from '../src'
 
+// private imports
+import { failSymbol } from '../src/runtype'
+import { getFormattedError, getFormattedErrorPath } from '../src/runtypeError'
+
 /// helpers
 
 function expectAcceptValuesImpure<T>(rt: sr.Runtype<T>, values: unknown[]) {
   values.forEach((v) => {
     // use internal call protocol so that it does not raise but return sth
     // that can be reported by jest
-    expect((rt as any)(v, sr.failSymbol)).toEqual(v)
-    expect((rt as any)(v, sr.failSymbol)).not.toBe(v)
+    expect((rt as any)(v, failSymbol)).toEqual(v)
+    expect((rt as any)(v, failSymbol)).not.toBe(v)
   })
 }
 
@@ -15,7 +19,7 @@ function expectAcceptValuesPure<T>(rt: sr.Runtype<T>, values: unknown[]) {
   values.forEach((v) => {
     // use internal call protocol so that it does not raise but return sth
     // that can be reported by jest
-    expect((rt as any)(v, sr.failSymbol)).toBe(v)
+    expect((rt as any)(v, failSymbol)).toBe(v)
   })
 }
 
@@ -26,9 +30,9 @@ function expectRejectValues<T>(
 ) {
   // when using them internally, they return a Fail
   values.forEach((v) => {
-    expect(() => (rt as any)(v, sr.failSymbol)).not.toThrow()
-    expect((rt as any)(v, sr.failSymbol)).toEqual({
-      [sr.failSymbol]: true,
+    expect(() => (rt as any)(v, failSymbol)).not.toThrow()
+    expect((rt as any)(v, failSymbol)).toEqual({
+      [failSymbol]: true,
       reason: expect.any(String),
       path: expect.any(Array),
     })
@@ -399,8 +403,8 @@ describe('enumValue', () => {
     BAZ = 'baz',
   }
 
-  const numericEnum = sr.enumValue(NumericEnum)
-  const stringEnum = sr.enumValue(StringEnum)
+  const numericEnum = sr.enum(NumericEnum)
+  const stringEnum = sr.enum(StringEnum)
 
   it('accepts any enum value', () => {
     expectAcceptValuesPure(numericEnum, [1, 2, 3])
@@ -1058,8 +1062,8 @@ describe('error messages', () => {
     try {
       runtypeA({ a: 'foo', b: [{ point: [12, 13] }, { point: [12, null] }] })
     } catch (e) {
-      expect(sr.getFormattedErrorPath(e)).toEqual('b[1].point[1]')
-      expect(sr.getFormattedError(e)).toEqual(
+      expect(getFormattedErrorPath(e)).toEqual('b[1].point[1]')
+      expect(getFormattedError(e)).toEqual(
         'RuntypeError: expected a number at `<value>.b[1].point[1]` in `{"a":"foo","b":[{"point":[12,13]},{"point":[12,null]}]}`',
       )
     }
@@ -1085,9 +1089,9 @@ describe('custom runtypes', () => {
   })
 
   it('should not throw an exception when used internally', () => {
-    expect((rt as any)(123, sr.failSymbol)).toEqual(
+    expect((rt as any)(123, failSymbol)).toEqual(
       expect.objectContaining({
-        [sr.failSymbol]: true,
+        [failSymbol]: true,
         reason: 'not the right type',
       }),
     )

@@ -1,5 +1,7 @@
 ### master
 
+- add `useRuntype` to call other runtypes in custom runtypes
+- rename `enumValue` to `enum`
 - remove `discriminatedUnion` - use the normal `union` instead.
   The discriminant `key` gets inferrred automatically by `union` now.
 

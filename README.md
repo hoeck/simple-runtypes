@@ -244,3 +244,4 @@ Advanced Runtypes
 - refactoring: single file per runtype
 - test types with [tsd](https://github.com/SamVerschueren/tsd)
 - add missing combinators: partial, required
+- add other combinators like partial, required, ...
