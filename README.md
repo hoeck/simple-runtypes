@@ -232,6 +232,10 @@ Advanced Runtypes
 
 ### Roadmap / Todos
 
+- rename `sloppyRecord` to `record.sloppy` because I need the `sloppy`-concept
+  for other runtypes too: e.g. `nullable.sloppy` - a `Runtype<T | null>` that
+  also accepts `undefined` which is useful to slowly add new nullable fields
+  to existing json database records
 - improve docs:
   - *preface*: what is a runtype and why is it useful
   - *why*: explain or link to example that shows "strict by default" and "efficient discriminating unions"
