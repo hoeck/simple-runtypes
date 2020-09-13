@@ -5,8 +5,6 @@ type EnumObject = { [key: string]: string | number }
 
 /**
  * Any value defined in the enumObject.
- *
- * TODO: rename to enum
  */
 function enumRuntype<T extends EnumObject, S extends keyof T>(
   enumObject: T,

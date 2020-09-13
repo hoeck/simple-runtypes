@@ -105,7 +105,7 @@ Check the factory functions documentation for more details.
 
 When using [`record`](src/record.ts#L91), any properties which are not defined in the runtype will cause the runtype to fail:
 
-```
+```typescript
 const strict = st.record({name: st.string()})
 
 strict({name: 'foo', other: 123})
@@ -114,7 +114,7 @@ strict({name: 'foo', other: 123})
 
 To ignore single properties, use [`ignore`](src/ignore.ts#L6), [`unknown`](src/unknown.ts#L6) or [`any`](src/any.ts#L6):
 
-```
+```typescript
 const strict = st.record({name: st.string(), other: st.ignore()})
 
 strict({name: 'foo', other: 123})
@@ -123,7 +123,7 @@ strict({name: 'foo', other: 123})
 
 Use [`sloppyRecord`](src/record.ts#L97) to only validate known properties and remove everything else:
 
-```
+```typescript
 const sloppy = st.sloppyRecord({name: st.string()})
 
 strict({name: 'foo', other: 123, bar: []})
@@ -136,7 +136,7 @@ Using any of [`record`](src/record.ts#L91) or [`sloppyRecord`](src/record.ts#L97
 
 Use the [`optional`](src/optional.ts#L11) runtype to create [optional properties](https://www.typescriptlang.org/docs/handbook/interfaces.html#optional-properties):
 
-```
+```typescript
 const squareConfigRuntype = st.record({
   color: st.optional(st.string()),
   width?: st.optional(st.number()),
@@ -147,7 +147,7 @@ const squareConfigRuntype = st.record({
 
 Collection runtypes such as [`record`](src/record.ts#L91), [`array`](src/array.ts#L28), [`tuple`](src/tuple.ts#L42) take runtypes as their parameters:
 
-```
+```typescript
 const nestedRuntype = st.record({
   name: st.string(),
   items: st.array(st.recorcd({ id: st.integer, label: st.string() })),
@@ -165,7 +165,7 @@ Simple-runtypes supports discriminated unions via [`union`](src/union.ts#L137) r
 
 The example found in the [Typescript Handbook](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#discriminating-unions) translated to simple-runtypes:
 
-```
+```typescript
 const networkLoadingState = st.record({
   state: st.literal('loading'),
 })
@@ -202,7 +202,7 @@ Basic runtypes that match TS / Javascript types:
 - [`boolean`](src/boolean.ts#L14)
 - [`null`](src/null.ts#6)
 - [`undefined`](src/undefined.ts#7)
-- [`enum`](src/enum.ts#11)
+- [`enum`](src/enum.ts#9)
 
 Meta runtypes
 
