@@ -1,4 +1,4 @@
-### master
+### 5.0.0
 
 - add `useRuntype` to call other runtypes in custom runtypes
 - rename `enumValue` to `enum`
