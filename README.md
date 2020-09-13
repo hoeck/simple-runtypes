@@ -23,6 +23,7 @@ Thats how runtypes work.
     + [Nesting](#nesting)
     + [Discriminated Unions](#discriminated-unions)
   * [Reference](#reference)
+  * [Roadmap / Todos](#roadmap--todos)
 
 <!-- tocstop -->
 
@@ -82,11 +83,11 @@ Why should I use this over the plethora of [other](https://github.com/moltar/typ
 
 ### Intro
 
-A [`Runtype`](src/index.ts#L187) is a function that:
+A [`Runtype`](src/runtype.ts#L79) is a function that:
 
 1. receives an unknown value
 2. returns that value or a copy if all validations pass
-3. throws a [`RuntypeError`](src/index.ts#L27) when validation fails
+3. throws a [`RuntypeError`](src/runtypeError.ts#L27) when validation fails
 
 ```typescript
 interface Runtype<T> {
@@ -95,14 +96,14 @@ interface Runtype<T> {
 ```
 
 Runtypes are constructed by calling factory functions.
-For instance, [`string`](src/index.ts#L450) creates and retuns a string runtype.
+For instance, [`string`](src/string.ts#L26) creates and retuns a string runtype.
 Check the factory functions documentation for more details.
 
 ### Usage Examples
 
 #### Strict Property Checks
 
-When using [`record`](src/index.ts#L896), any properties which are not defined in the runtype will cause the runtype to fail:
+When using [`record`](src/record.ts#L91), any properties which are not defined in the runtype will cause the runtype to fail:
 
 ```
 const strict = st.record({name: st.string()})
@@ -111,7 +112,7 @@ strict({name: 'foo', other: 123})
 // => RuntypeError: Unknown attribute 'other'
 ```
 
-To ignore single properties, use [`ignore`](src/index.ts#L552), [`unknown`](src/index.ts#L534) or [`any`](src/index.ts#L543):
+To ignore single properties, use [`ignore`](src/ignore.ts#L6), [`unknown`](src/unknown.ts#L6) or [`any`](src/any.ts#L6):
 
 ```
 const strict = st.record({name: st.string(), other: st.ignore()})
@@ -120,7 +121,7 @@ strict({name: 'foo', other: 123})
 // => {name: foo, other: undefined}
 ```
 
-Use `sloppyRecord` to only validate known properties and remove everything else:
+Use [`sloppyRecord`](src/record.ts#L97) to only validate known properties and remove everything else:
 
 ```
 const sloppy = st.sloppyRecord({name: st.string()})
@@ -129,11 +130,11 @@ strict({name: 'foo', other: 123, bar: []})
 // => {name: foo}
 ```
 
-Using any of [`record`](src/index.ts#L896) or `sloppyRecord` will keep you safe from any `__proto__` injection or overriding attempts.
+Using any of [`record`](src/record.ts#L91) or [`sloppyRecord`](src/record.ts#L97) will keep you safe from any `__proto__` injection or overriding attempts.
 
 #### Optional Properties
 
-Use the [`optional`](src/index.ts#L976) runtype to create [optional properties](https://www.typescriptlang.org/docs/handbook/interfaces.html#optional-properties):
+Use the [`optional`](src/optional.ts#L11) runtype to create [optional properties](https://www.typescriptlang.org/docs/handbook/interfaces.html#optional-properties):
 
 ```
 const squareConfigRuntype = st.record({
@@ -144,7 +145,7 @@ const squareConfigRuntype = st.record({
 
 #### Nesting
 
-Collection runtypes such as [`record`](src/index.ts#L896), [`array`](src/index.ts#L660), [`tuple`](src/index.ts#L733) take runtypes as their parameters:
+Collection runtypes such as [`record`](src/record.ts#L91), [`array`](src/array.ts#L28), [`tuple`](src/tuple.ts#L42) take runtypes as their parameters:
 
 ```
 const nestedRuntype = st.record({
@@ -160,7 +161,7 @@ nestedRuntype({
 
 #### Discriminated Unions
 
-Simple-runtypes supports discriminated unions via [`union`](src/index.ts#L1094) runtype
+Simple-runtypes supports discriminated unions via [`union`](src/union.ts#L137) runtype
 
 The example found in the [Typescript Handbook](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#discriminating-unions) translated to simple-runtypes:
 
@@ -196,43 +197,43 @@ type NetworkState = ReturnType<networkStateRuntype>
 
 Basic runtypes that match TS / Javascript types:
 
-- [`number`](src/index.ts#L262)
-- [`string`](src/index.ts#L450)
-- [`boolean`](src/index.ts#L430)
-- `null`
-- `undefined`
-- `enum`
+- [`number`](src/number.ts#L13)
+- [`string`](src/string.ts#L26)
+- [`boolean`](src/boolean.ts#L14)
+- [`null`](src/null.ts#6)
+- [`undefined`](src/undefined.ts#7)
+- [`enum`](src/enum.ts#11)
 
 Meta runtypes
 
-- [`integer`](src/index.ts#L311)
-- [`stringAsInteger`](src/index.ts#L390)
-- [`ignore`](src/index.ts#L552)
-- [`unknown`](src/index.ts#L534)
-- [`any`](src/index.ts#L543)
+- [`integer`](src/integer.ts#L26)
+- [`stringAsInteger`](src/stringAsInteger.ts#L62)
+- [`ignore`](src/ignore.ts#L6)
+- [`unknown`](src/unknown.ts#L6)
+- [`any`](src/any.ts#L6)
 
 Objects and Array Runtypes
 
-- [`tuple`](src/index.ts#L733)
-- [`array`](src/index.ts#L660)
-- [`record`](src/index.ts#L896)
-- `sloppyRecord`
-- [`numberIndex`](src/index.ts#L839)
-- [`stringIndex`](src/index.ts#L788)
+- [`tuple`](src/tuple.ts#L42)
+- [`array`](src/array.ts#L28)
+- [`record`](src/record.ts#L91)
+- [`sloppyRecord`](src/record.ts#L97)
+- [`numberIndex`](src/numberIndex.ts#L18)
+- [`stringIndex`](src/stringIndex.ts#L17)
 
 Advanced Runtypes
 
-- [`literal`](src/index.ts#L487)
-- [`optional`](src/index.ts#L976)
-- [`nullable`](src/index.ts#L991)
+- [`literal`](src/literal.ts#L10)
+- [`optional`](src/optional.ts#L11)
+- [`nullable`](src/nullable.ts#L11)
 - [`discriminatedUnion`](src/index.ts#L1094)
-- [`union`](src/index.ts#L1171)
-- [`intersection`](src/index.ts#L1255)
-- [`omit`](src/index.ts#L1294)
+- [`union`](src/union.ts#L137)
+- [`intersection`](src/intersection.ts#L72)
+- [`omit`](src/omit.ts#L9)
 
 ### Roadmap / Todos
 
-- rename `sloppyRecord` to `record.sloppy` because I need the `sloppy`-concept
+- rename [`sloppyRecord`](src/record.ts#L97) to `record.sloppy` because I need the `sloppy`-concept
   for other runtypes too: e.g. `nullable.sloppy` - a `Runtype<T | null>` that
   also accepts `undefined` which is useful to slowly add new nullable fields
   to existing json database records
@@ -243,7 +244,7 @@ Advanced Runtypes
     1. express all typescript types
     2. is extendable with custom runtypes (add documentation)
   - add small frontend and backend example projects that show how to use simple-runtypes in production
-- get rid of `discriminatedUnion` and make `union` determine the type tag attribute automatically
+- get rid of `discriminatedUnion` and make [`union`](src/union.ts#L137) determine the type tag attribute automatically
 - refactoring: generic type definitions (get rid of function overloads for tuple, union, ...)
 - refactoring: single file per runtype
 - test types with [tsd](https://github.com/SamVerschueren/tsd)
