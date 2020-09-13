@@ -1,83 +1,15 @@
 import * as sr from '../src'
 
 // private imports
-import { failSymbol } from '../src/runtype'
 import { getFormattedError, getFormattedErrorPath } from '../src/runtypeError'
 
-/// helpers
-
-function expectAcceptValuesImpure<T>(rt: sr.Runtype<T>, values: unknown[]) {
-  values.forEach((v) => {
-    // use internal call protocol so that it does not raise but return sth
-    // that can be reported by jest
-    expect((rt as any)(v, failSymbol)).toEqual(v)
-    expect((rt as any)(v, failSymbol)).not.toBe(v)
-  })
-}
-
-function expectAcceptValuesPure<T>(rt: sr.Runtype<T>, values: unknown[]) {
-  values.forEach((v) => {
-    // use internal call protocol so that it does not raise but return sth
-    // that can be reported by jest
-    expect((rt as any)(v, failSymbol)).toBe(v)
-  })
-}
-
-function expectRejectValues<T>(
-  rt: sr.Runtype<T>,
-  values: unknown[],
-  error?: string | RegExp,
-) {
-  // when using them internally, they return a Fail
-  values.forEach((v) => {
-    expect(() => (rt as any)(v, failSymbol)).not.toThrow()
-    expect((rt as any)(v, failSymbol)).toEqual({
-      [failSymbol]: true,
-      reason: expect.any(String),
-      path: expect.any(Array),
-    })
-  })
-
-  // when using runtypes as a normal user, they respond with throwing errors
-  values.forEach((v) => {
-    expect(() => rt(v)).toThrow(error || /.*/)
-  })
-
-  // when passing something that is not a failSymbol or undefined, they
-  // respond with a usage error
-  expect(() => (rt as any)(Symbol('wrong'), null)).toThrow(
-    /failOrThrow must be undefined or the failSymbol/,
-  )
-  expect(() => (rt as any)(Symbol('wrong'), 0)).toThrow(
-    /failOrThrow must be undefined or the failSymbol/,
-  )
-}
-
-// properties defined on all js objects,
-// need ensure that we're not silently accepting them anywhere
-const objectAttributes = [
-  '__defineGetter__',
-  '__defineSetter__',
-  '__lookupGetter__',
-  '__lookupSetter__',
-  '__proto__',
-  'constructor',
-  'hasOwnProperty',
-  'isPrototypeOf',
-  'propertyIsEnumerable',
-  'toLocaleString',
-  'toString',
-  'valueOf',
-]
-
-function expectRejectObjectAttributes(
-  rt: sr.Runtype<any>,
-  error?: string | RegExp,
-) {
-  objectAttributes.forEach((a) => {
-    expect(() => rt(a)).toThrow(error || /.*/)
-  })
-}
+import {
+  expectAcceptValuesImpure,
+  expectAcceptValuesPure,
+  expectRejectObjectAttributes,
+  expectRejectValues,
+  objectAttributes,
+} from './helpers'
 
 /// tests
 
@@ -1067,33 +999,5 @@ describe('error messages', () => {
         'RuntypeError: expected a number at `<value>.b[1].point[1]` in `{"a":"foo","b":[{"point":[12,13]},{"point":[12,null]}]}`',
       )
     }
-  })
-})
-
-describe('custom runtypes', () => {
-  const rt = sr.runtype((v) => {
-    if (v === 31) {
-      return 31
-    }
-
-    if (v === '-') {
-      return '-'
-    }
-
-    return sr.fail('not the right type')
-  })
-
-  it('should create a custom runtype', () => {
-    expectAcceptValuesPure(rt, ['-', 31])
-    expectRejectValues(rt, ['31', null, 123, []])
-  })
-
-  it('should not throw an exception when used internally', () => {
-    expect((rt as any)(123, failSymbol)).toEqual(
-      expect.objectContaining({
-        [failSymbol]: true,
-        reason: 'not the right type',
-      }),
-    )
   })
 })
