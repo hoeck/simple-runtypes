@@ -6,7 +6,7 @@ import { failSymbol } from '../src/runtype'
 export function expectAcceptValuesImpure<T>(
   rt: sr.Runtype<T>,
   values: unknown[],
-) {
+): void {
   values.forEach((v) => {
     // use internal call protocol so that it does not raise but return sth
     // that can be reported by jest
@@ -18,7 +18,7 @@ export function expectAcceptValuesImpure<T>(
 export function expectAcceptValuesPure<T>(
   rt: sr.Runtype<T>,
   values: unknown[],
-) {
+): void {
   values.forEach((v) => {
     // use internal call protocol so that it does not raise but return sth
     // that can be reported by jest
@@ -30,7 +30,7 @@ export function expectRejectValues<T>(
   rt: sr.Runtype<T>,
   values: unknown[],
   error?: string | RegExp,
-) {
+): void {
   // when using them internally, they return a Fail
   values.forEach((v) => {
     expect(() => (rt as any)(v, failSymbol)).not.toThrow()
@@ -76,7 +76,7 @@ export const objectAttributes = [
 export function expectRejectObjectAttributes(
   rt: sr.Runtype<any>,
   error?: string | RegExp,
-) {
+): void {
   objectAttributes.forEach((a) => {
     expect(() => rt(a)).toThrow(error || /.*/)
   })

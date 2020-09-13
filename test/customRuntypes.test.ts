@@ -1,12 +1,6 @@
 import * as sr from '../src'
 import { failSymbol } from '../src/runtype'
-import {
-  expectAcceptValuesImpure,
-  expectAcceptValuesPure,
-  expectRejectObjectAttributes,
-  expectRejectValues,
-  objectAttributes,
-} from './helpers'
+import { expectAcceptValuesPure, expectRejectValues } from './helpers'
 
 describe('custom runtypes', () => {
   describe('simple nested runtypes', () => {

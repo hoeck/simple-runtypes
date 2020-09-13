@@ -18,7 +18,7 @@ export interface Fail {
 export function createFail(
   failOrThrow: typeof failSymbol | undefined,
   msg: string,
-  topLevelValue?: any,
+  topLevelValue?: unknown,
 ): any {
   if (failOrThrow === undefined) {
     // runtype check failed
@@ -45,9 +45,9 @@ export function createFail(
 export function propagateFail(
   failOrThrow: typeof failSymbol | undefined,
   failObj: Fail,
-  topLevelValue?: any,
+  topLevelValue?: unknown,
   key?: string | number,
-) {
+): Fail {
   if (key !== undefined) {
     failObj.path.push(key)
   }
@@ -115,7 +115,7 @@ export function internalRuntype<T>(
  * A non-pure runtype may return a changed value.
  * This is used to get rid of redundant object copying
  */
-export function isPureRuntype(fn: Runtype<any>) {
+export function isPureRuntype(fn: Runtype<any>): boolean {
   return !!(fn as any).isPure
 }
 

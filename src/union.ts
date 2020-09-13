@@ -92,7 +92,7 @@ function findDiscriminatingUnionKey(
       return
     }
 
-    for (let f in fields) {
+    for (const f in fields) {
       const fieldRuntype = fields[f]
       const l = (fieldRuntype as any).literal
 

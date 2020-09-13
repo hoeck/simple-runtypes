@@ -1,4 +1,4 @@
-export function debugValue(v: any, maxLength = 512) {
+export function debugValue(v: unknown, maxLength = 512): string {
   let s: string
 
   if (v === undefined) {
