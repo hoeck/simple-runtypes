@@ -21,7 +21,7 @@ Thats how runtypes work.
     + [Strict Property Checks](#strict-property-checks)
     + [Optional Properties](#optional-properties)
     + [Nesting](#nesting)
-    + [Discriminated Unions](#discriminated-unions)
+    + [Discriminating Unions](#discriminating-unions)
   * [Reference](#reference)
   * [Roadmap / Todos](#roadmap--todos)
 
@@ -159,9 +159,9 @@ nestedRuntype({
 }) // => returns the same data
 ```
 
-#### Discriminated Unions
+#### Discriminating Unions
 
-Simple-runtypes supports discriminated unions via [`union`](src/union.ts#L137) runtype
+Simple-runtypes supports [Discriminating Unions](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#discriminating-unions) via the [`union`](src/union.ts#L137) runtype.
 
 The example found in the [Typescript Handbook](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#discriminating-unions) translated to simple-runtypes:
 
@@ -192,6 +192,8 @@ const networdStateRuntype = st.union(
 
 type NetworkState = ReturnType<networkStateRuntype>
 ```
+
+Finding the runtype to validate a specific discriminating union with is done efficiently with a [`Map`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map).
 
 ### Reference
 
@@ -226,17 +228,16 @@ Advanced Runtypes
 - [`literal`](src/literal.ts#L10)
 - [`optional`](src/optional.ts#L11)
 - [`nullable`](src/nullable.ts#L11)
-- [`discriminatedUnion`](src/index.ts#L1094)
 - [`union`](src/union.ts#L137)
 - [`intersection`](src/intersection.ts#L72)
 - [`omit`](src/omit.ts#L9)
 
 ### Roadmap / Todos
 
-- rename [`sloppyRecord`](src/record.ts#L97) to `record.sloppy` because I need the `sloppy`-concept
-  for other runtypes too: e.g. `nullable.sloppy` - a `Runtype<T | null>` that
-  also accepts `undefined` which is useful to slowly add new nullable fields
-  to existing json database records
+- rename [`sloppyRecord`](src/record.ts#L97) to `record.sloppy` because I need
+  the `sloppy`-concept for other runtypes too: e.g. `nullable.sloppy` - a
+  `Runtype<T | null>` that also accepts `undefined` which is useful to slowly
+  add new nullable fields to existing json database records
 - improve docs:
   - *preface*: what is a runtype and why is it useful
   - *why*: explain or link to example that shows "strict by default" and "efficient discriminating unions"
@@ -244,9 +245,6 @@ Advanced Runtypes
     1. express all typescript types
     2. is extendable with custom runtypes (add documentation)
   - add small frontend and backend example projects that show how to use simple-runtypes in production
-- get rid of `discriminatedUnion` and make [`union`](src/union.ts#L137) determine the type tag attribute automatically
-- refactoring: generic type definitions (get rid of function overloads for tuple, union, ...)
-- refactoring: single file per runtype
 - test types with [tsd](https://github.com/SamVerschueren/tsd)
 - add missing combinators: partial, required
 - add other combinators like partial, required, ...
