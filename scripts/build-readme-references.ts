@@ -7,7 +7,10 @@ function isExported(s: ts.Statement) {
 }
 
 // collect all exported function names and their line numbers
-function buildFunctionIndex(filePath: string) {
+function buildFunctionIndexForFile(
+  filePath: string,
+  pushResult: (identifier: string, lineNr: number) => void,
+) {
   const sourceFile = ts.createSourceFile(
     'test.ts',
     fs.readFileSync(filePath).toString('utf-8'),
@@ -15,8 +18,6 @@ function buildFunctionIndex(filePath: string) {
     true,
     ts.ScriptKind.TS,
   )
-
-  const functions = new Map<string, number>()
 
   sourceFile.statements.forEach((s: any) => {
     if (
@@ -44,7 +45,22 @@ function buildFunctionIndex(filePath: string) {
     const lineNr =
       sourceFile.getLineAndCharacterOfPosition(decl.getStart()).line + 1
 
-    functions.set(name, lineNr)
+    pushResult(name, lineNr)
+  })
+}
+
+function buildFunctionIndex(directory: string) {
+  const files = fs.readdirSync(directory)
+
+  const functions = new Map<string, { lineNr: number; fileName: string }>()
+
+  files.forEach((fileName) => {
+    buildFunctionIndexForFile(
+      path.join(directory, fileName),
+      (identifier, lineNr) => {
+        functions.set(identifier, { fileName, lineNr })
+      },
+    )
   })
 
   return functions
@@ -52,7 +68,7 @@ function buildFunctionIndex(filePath: string) {
 
 // extend every occurence of `<runtype>` with a link to the declaration
 function createReadmeReferenceLinks() {
-  const sourcePath = path.join(__dirname, '../src/index.ts')
+  const sourcePath = path.join(__dirname, '../src')
   const readmePath = path.join(__dirname, '../README.md')
 
   const functionIndex = buildFunctionIndex(sourcePath)
@@ -60,31 +76,31 @@ function createReadmeReferenceLinks() {
 
   const readmeWithLinks = readme
     // update existing links
-    .replace(/\[`\w+`\]\(src\/index.ts#L\d+\)/g, (match, g1) => {
+    .replace(/\[`\w+`\]\(src\/\w+\.ts#L\d+\)/g, (match, g1) => {
       const functionName = match.slice(2, match.indexOf('`', 2))
-      const lineNr = functionIndex.get(functionName)
+      const entry = functionIndex.get(functionName)
 
-      if (lineNr === undefined) {
+      if (!entry) {
         console.log('no entry found for existing link', functionName, match)
 
         return match
       }
 
-      return `[${functionName}](src/index.ts#L${lineNr})`
+      return `[\`${functionName}\`](src/${entry.fileName}#L${entry.lineNr})`
     })
     // create new links
     .replace(/[^\[]`\w+`/g, (match) => {
       const prefixChar = match[0]
       const functionName = match.slice(2, -1)
-      const lineNr = functionIndex.get(functionName)
+      const entry = functionIndex.get(functionName)
 
-      if (lineNr === undefined) {
+      if (!entry) {
         console.log('no entry found for', functionName, match)
 
         return match
       }
 
-      return `${prefixChar}[${functionName}](src/index.ts#L${lineNr})`
+      return `${prefixChar}[\`${functionName}\`](src/${entry.fileName}#L${entry.lineNr})`
     })
 
   fs.writeFileSync(readmePath, readmeWithLinks)
