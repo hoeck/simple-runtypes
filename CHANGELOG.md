@@ -1,3 +1,7 @@
+### 5.0.1
+
+- fix missing error utility (`getFormattedError()`, ...) exports
+
 ### 5.0.0
 
 - add `useRuntype` to call other runtypes in custom runtypes

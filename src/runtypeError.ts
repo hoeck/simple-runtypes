@@ -1,3 +1,6 @@
+/**
+ * Turn an arbitrary object into a string of max length suitable for logging.
+ */
 export function debugValue(v: unknown, maxLength = 512): string {
   let s: string
 
@@ -65,13 +68,13 @@ export function getFormattedErrorPath(e: RuntypeError): string {
  */
 export function getFormattedErrorValue(
   e: RuntypeError,
-  maxLength = 256,
+  maxLength = 512,
 ): string {
   return debugValue(e.value, maxLength)
 }
 
 /**
- * Return a string representaiton of the value that failed the runtype check.
+ * Return a string representation of the value that failed the runtype check.
  *
  * Cap the size of the returned string at maxLength
  */

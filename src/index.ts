@@ -1,5 +1,11 @@
 // runtypes
-export { RuntypeError, RuntypeUsageError } from './runtypeError'
+export {
+  RuntypeError,
+  RuntypeUsageError,
+  getFormattedError,
+  getFormattedErrorPath,
+  getFormattedErrorValue,
+} from './runtypeError'
 export { Runtype, Fail, runtype, fail, useRuntype, isFail } from './runtype'
 
 // basic types
