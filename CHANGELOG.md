@@ -1,3 +1,10 @@
+### 5.0.2
+
+- fix `fail` to not return `any` but `Fail`
+  Now, custom runtypes will result in the correct inferred type of
+  `Runtype<T>` instead of `Runtype<any>` for custom runtypes that might return
+  a failure.
+
 ### 5.0.1
 
 - fix missing error utility (`getFormattedError()`, ...) exports

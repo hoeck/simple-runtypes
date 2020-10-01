@@ -87,7 +87,7 @@ A [`Runtype`](src/runtype.ts#L79) is a function that:
 
 1. receives an unknown value
 2. returns that value or a copy if all validations pass
-3. throws a [`RuntypeError`](src/runtypeError.ts#L27) when validation fails
+3. throws a [`RuntypeError`](src/runtypeError.ts#L30) when validation fails
 
 ```typescript
 interface Runtype<T> {

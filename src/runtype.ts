@@ -142,7 +142,7 @@ export function runtype<T>(fn: (v: unknown) => T | Fail): Runtype<T> {
 /**
  * Create a runtype validation error for custom runtypes
  */
-export function fail(msg: string): any {
+export function fail(msg: string): Fail {
   return createFail(failSymbol, msg)
 }
 
