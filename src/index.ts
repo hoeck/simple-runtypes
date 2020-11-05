@@ -5,7 +5,7 @@ export {
   getFormattedErrorValue,
 } from './runtypeError'
 export { Fail, Runtype, RuntypeError, RuntypeUsageError } from './runtype'
-export { createError, runtype, useRuntype, ValidationResult } from './custom'
+export { createError, runtype, use, ValidationResult } from './custom'
 
 // basic types
 export { any } from './any'

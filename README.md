@@ -65,7 +65,7 @@ userRuntype({id: 1, name: 'matt', isAdmin: true})
 // throws a st.RuntypeError 'invalid field 'isAdmin' in data
 ```
 
-You can also `use` a runtype without throwing errors:
+You can also [`use`](src/custom.ts#L51) a runtype without throwing errors:
 
 ```typescript
 st.use(userRuntype, {id: 1, name: 'matt'})
@@ -99,11 +99,12 @@ Why should I use this over the plethora of [other](https://github.com/moltar/typ
 
 ### Intro
 
-A [`Runtype`](src/runtype.ts#L79) is a function that:
+A [`Runtype`](src/runtype.ts#L106) is a function that:
 
 1. receives an unknown value
 2. returns that value or a copy if all validations pass
-3. throws a [`RuntypeError`](src/runtypeError.ts#L30) when validation fails
+3. throws a [`RuntypeError`](src/runtype.ts#L7) when validation fails
+   or returns [`ValidationResult`](src/custom.ts#L37) when passed to [`use`](src/custom.ts#L51)
 
 ```typescript
 interface Runtype<T> {
@@ -177,7 +178,7 @@ nestedRuntype({
 
 #### Discriminating Unions
 
-Simple-runtypes supports [Discriminating Unions](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#discriminating-unions) via the [`union`](src/union.ts#L137) runtype.
+Simple-runtypes supports [Discriminating Unions](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#discriminating-unions) via the [`union`](src/union.ts#L138) runtype.
 
 The example found in the [Typescript Handbook](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#discriminating-unions) translated to simple-runtypes:
 
@@ -244,14 +245,14 @@ Advanced Runtypes
 - [`literal`](src/literal.ts#L10)
 - [`optional`](src/optional.ts#L11)
 - [`nullable`](src/nullable.ts#L11)
-- [`union`](src/union.ts#L137)
+- [`union`](src/union.ts#L138)
 - [`intersection`](src/intersection.ts#L72)
-- [`omit`](src/omit.ts#L9)
+- [`omit`](src/omit.ts#L8)
 
 ### Roadmap / Todos
 
 - rename [`sloppyRecord`](src/record.ts#L97) to `record.sloppy` because I need
-  the `sloppy`-concept for other runtypes too: e.g. `nullable.sloppy` - a
+  the "sloppy"-concept for other runtypes too: e.g. `nullable.sloppy` - a
   `Runtype<T | null>` that also accepts `undefined` which is useful to slowly
   add new nullable fields to existing json database records
 - improve docs:

@@ -34,7 +34,7 @@ describe('custom runtypes', () => {
   describe('nested runtypes that combine other runtypes', () => {
     const stringsRt = sr.tuple(sr.literal('3'), sr.literal('1'))
     const combinedRt = sr.runtype((v) => {
-      const strings = sr.useRuntype(stringsRt, v)
+      const strings = sr.use(stringsRt, v)
 
       if (strings.ok) {
         return 31

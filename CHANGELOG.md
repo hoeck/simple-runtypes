@@ -1,3 +1,7 @@
+### 6.0.1
+
+- fix: rename `useRuntype` to `use`
+
 ### 6.0.0
 
 - change `useRuntype` to return a `ValidationResult` to support using runtypes

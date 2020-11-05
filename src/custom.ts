@@ -48,7 +48,7 @@ export type ValidationResult<T> =
  * Useful when writing your own runtypes and when the bad performance of
  * exceptions and try-catch for error handling is of concern.
  */
-export function useRuntype<T>(r: Runtype<T>, v: unknown): ValidationResult<T> {
+export function use<T>(r: Runtype<T>, v: unknown): ValidationResult<T> {
   const result = (r as InternalRuntype)(v, failSymbol)
 
   if (isFail(result)) {
