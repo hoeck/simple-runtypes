@@ -1,3 +1,10 @@
+### 6.0.0
+
+- change `useRuntype` to return a `ValidationResult` to support using runtypes
+  without relying on exceptions and win in benchmarks
+- rename `fail` to `createError`
+- make `isFail` private, use `ValidationResult.ok` instead
+
 ### 5.0.2
 
 - fix `fail` to not return `any` but `Fail`

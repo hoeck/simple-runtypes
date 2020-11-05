@@ -10,8 +10,9 @@ import {
   isPureRuntype,
   propagateFail,
   Runtype,
+  RuntypeUsageError,
 } from './runtype'
-import { debugValue, RuntypeUsageError } from './runtypeError'
+import { debugValue } from './runtypeError'
 
 // A tagged union with type discriminant 'key'.
 // Runtypes must be created with `record(...)` which contains type metadata to

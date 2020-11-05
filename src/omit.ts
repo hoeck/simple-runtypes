@@ -1,6 +1,5 @@
 import { record } from './record'
-import { Runtype } from './runtype'
-import { RuntypeUsageError } from './runtypeError'
+import { Runtype, RuntypeUsageError } from './runtype'
 
 /**
  * Build a new record runtype that omits some keys from the original.

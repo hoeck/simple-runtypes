@@ -1,4 +1,30 @@
-import { RuntypeError, RuntypeUsageError } from './runtypeError'
+/**
+ * Thrown if the input does not match the runtype.
+ *
+ * Use `getFormattedErrorPath`, `getFormattedErrorValue` and
+ * `getFormattedError` to convert path and value to a loggable string.
+ */
+export class RuntypeError extends Error {
+  // implements RuntypeErrorInfo
+  readonly path: (string | number)[]
+  readonly value: any
+  readonly reason: string
+
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+  constructor(reason: string, value: any, path: (string | number)[]) {
+    super(reason)
+
+    this.name = 'RuntypeError'
+    this.reason = reason
+    this.path = path
+    this.value = value
+  }
+}
+
+/**
+ * Thrown if the api is misused.
+ */
+export class RuntypeUsageError extends Error {}
 
 /**
  * Symbol that identifies failed typechecks
@@ -7,11 +33,15 @@ export const failSymbol: unique symbol = Symbol('SimpleRuntypesFail')
 
 /**
  * Object to return internally if a typecheck failed
+ *
+ * This is used internally to avoid creating garbage for each runtype
+ * validation call.
  */
 export interface Fail {
-  [failSymbol]: true
+  [failSymbol]: true // marker to be able to distinguish Fail from other objects
   reason: string
   path: (string | number)[]
+  value?: any
 }
 
 // create a fail or raise the error exception if the called runtype was on top
@@ -31,6 +61,7 @@ export function createFail(
       [failSymbol]: true,
       reason: msg,
       path: [],
+      value: undefined,
     }
   } else {
     throw new RuntypeUsageError(
@@ -54,11 +85,7 @@ export function propagateFail(
 
   if (failOrThrow === undefined) {
     // runtype check failed
-    throw new RuntypeError(
-      failObj.reason,
-      topLevelValue,
-      failObj.path.length ? failObj.path.reverse() : undefined,
-    )
+    throw new RuntypeError(failObj.reason, topLevelValue, failObj.path)
   } else if (failOrThrow === failSymbol) {
     return failObj
   } else {
@@ -77,7 +104,12 @@ export function propagateFail(
  * runtypes implementation.
  */
 export interface Runtype<T> {
-  // a function to check that v 'conforms' to type T
+  /**
+   * A function to check that v 'conforms' to type T
+   *
+   * By default, Raises a RuntypeError if the check fails.
+   * With `useRuntype(runtype, value)` it will return a `ValidationResult` instead.
+   */
   (v: unknown): T
 }
 
@@ -125,28 +157,6 @@ export type InternalRuntype = (
 ) => any
 
 /**
- * Construct a runtype from a validation function.
- */
-export function runtype<T>(fn: (v: unknown) => T | Fail): Runtype<T> {
-  return internalRuntype<any>((v, failOrThrow) => {
-    const res = fn(v)
-
-    if (isFail(res)) {
-      return propagateFail(failOrThrow, res, v)
-    }
-
-    return res
-  })
-}
-
-/**
- * Create a runtype validation error for custom runtypes
- */
-export function fail(msg: string): Fail {
-  return createFail(failSymbol, msg)
-}
-
-/**
  * Check whether a returned value is a failure.
  */
 export function isFail(v: unknown): v is Fail {
@@ -154,12 +164,5 @@ export function isFail(v: unknown): v is Fail {
     return false
   }
 
-  return failSymbol in v
-}
-
-/**
- * Use a runtype within a custom runtype
- */
-export function useRuntype<T>(r: Runtype<T>, v: unknown): T | Fail {
-  return (r as InternalRuntype)(v, failSymbol)
+  return (v as any)[failSymbol]
 }

@@ -1,3 +1,7 @@
+import { RuntypeError, Fail } from './runtype'
+
+type RuntypeErrorInfo = RuntypeError | Fail
+
 /**
  * Turn an arbitrary object into a string of max length suitable for logging.
  */
@@ -22,34 +26,18 @@ export function debugValue(v: unknown, maxLength = 512): string {
 }
 
 /**
- * Thrown if the input does not match the runtype.
- *
- * Use `getFormattedErrorPath`, `getFormattedErrorValue` and
- * `getFormattedError` to convert path and value to a loggable string.
- */
-export class RuntypeError extends Error {
-  readonly path?: (string | number)[]
-  readonly value?: any
-
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  constructor(message: string, value?: any, path?: (string | number)[]) {
-    super(message)
-
-    this.name = 'RuntypeError'
-    this.path = path
-    this.value = value
-  }
-}
-
-/**
  * Return the object path at which the error occured.
  */
-export function getFormattedErrorPath(e: RuntypeError): string {
+export function getFormattedErrorPath(e: RuntypeErrorInfo): string {
   if (!Array.isArray(e.path)) {
     return '(error is not a RuntypeError!)'
   }
 
-  return e.path
+  // path in Fail objects is with the root-element at the end bc. its easier
+  // to build it that way (just an [].push)
+  const pathInRootElementFirstOrder = [...e.path].reverse()
+
+  return pathInRootElementFirstOrder
     .map((k) =>
       typeof k === 'number'
         ? `[${k}]`
@@ -67,7 +55,7 @@ export function getFormattedErrorPath(e: RuntypeError): string {
  * Cap the size of the returned string at maxLength
  */
 export function getFormattedErrorValue(
-  e: RuntypeError,
+  e: RuntypeErrorInfo,
   maxLength = 512,
 ): string {
   return debugValue(e.value, maxLength)
@@ -78,17 +66,14 @@ export function getFormattedErrorValue(
  *
  * Cap the size of the returned string at maxLength
  */
-export function getFormattedError(e: RuntypeError, maxLength = 512): string {
+export function getFormattedError(
+  e: RuntypeErrorInfo,
+  maxLength = 512,
+): string {
   const rawPath = getFormattedErrorPath(e)
   const path = rawPath ? `<value>.${rawPath}` : '<value>'
+  const label = 'name' in e ? `${e.name}: ` : ''
+  const value = getFormattedErrorValue(e, maxLength)
 
-  return `${e.toString()} at \`${path}\` in \`${getFormattedErrorValue(
-    e,
-    maxLength,
-  )}\``
+  return `${label}${e.reason} at \`${path}\` in \`${value}\``
 }
-
-/**
- * Thrown if the api is misused.
- */
-export class RuntypeUsageError extends Error {}

@@ -6,8 +6,8 @@ import {
   isPureRuntype,
   propagateFail,
   Runtype,
+  RuntypeUsageError,
 } from './runtype'
-import { RuntypeUsageError } from './runtypeError'
 
 // An intersection of two record runtypes
 function recordIntersection<A, B>(

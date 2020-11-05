@@ -65,6 +65,22 @@ userRuntype({id: 1, name: 'matt', isAdmin: true})
 // throws a st.RuntypeError 'invalid field 'isAdmin' in data
 ```
 
+You can also `use` a runtype without throwing errors:
+
+```typescript
+st.use(userRuntype, {id: 1, name: 'matt'})
+// => {ok: true, result: {id: 1, name: 'matt'}}
+
+st.use(userRuntype, {id: 1, name: 'matt', isAdmin: true})
+// => {ok: false, error: FAIL}
+
+st.getFormattedError(FAIL)
+// => 'invalid keys in record ["c"] at `<value>` in `{"a":1,"b":"as","c":false}`'
+```
+
+Not throwing errors is way more efficient but less convenient as you always
+have to check the resulting type.
+
 ## Why?
 
 Why should I use this over the plethora of [other](https://github.com/moltar/typescript-runtime-type-benchmarks#packages-compared) runtype validation libraries available?

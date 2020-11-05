@@ -13,7 +13,7 @@ describe('custom runtypes', () => {
         return '-'
       }
 
-      return sr.fail('not the right type')
+      return sr.createError('not the right type')
     })
 
     it('should create a custom runtype', () => {
@@ -36,15 +36,15 @@ describe('custom runtypes', () => {
     const combinedRt = sr.runtype((v) => {
       const strings = sr.useRuntype(stringsRt, v)
 
-      if (!sr.isFail(strings)) {
+      if (strings.ok) {
         return 31
       }
 
       if (v === 31) {
-        return 31
+        return v
       }
 
-      return sr.fail('not the right type')
+      return sr.createError('not the right type')
     })
 
     it('should invoke other runtypes', () => {
