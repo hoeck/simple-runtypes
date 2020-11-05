@@ -6,7 +6,7 @@ import { RuntypeError, RuntypeUsageError } from './runtypeError'
 export const failSymbol: unique symbol = Symbol('SimpleRuntypesFail')
 
 /**
- * Object to return internall if a typecheck failed
+ * Object to return internally if a typecheck failed
  */
 export interface Fail {
   [failSymbol]: true
@@ -22,7 +22,7 @@ export function createFail(
 ): any {
   if (failOrThrow === undefined) {
     // runtype check failed
-    throw new RuntypeError(msg, topLevelValue)
+    throw new RuntypeError(msg, topLevelValue, [])
   } else if (failOrThrow === failSymbol) {
     // runtype check failed but it should not throw an exception bc its called
     // internally e.g. as part of a union or because we want to add debug info
