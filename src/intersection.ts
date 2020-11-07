@@ -1,3 +1,4 @@
+import { union } from './union'
 import { record } from './record'
 import {
   InternalRuntype,
@@ -10,7 +11,7 @@ import {
 } from './runtype'
 
 // An intersection of two record runtypes
-function recordIntersection<A, B>(
+function recordIntersection2<A, B>(
   recordA: Runtype<A>,
   recordB: Runtype<B>,
 ): Runtype<A & B> {
@@ -26,20 +27,57 @@ function recordIntersection<A, B>(
     } else if (b[k]) {
       fields[k] = b[k]
     } else {
-      throw new RuntypeUsageError('invalid else')
+      throw new RuntypeUsageError('recordIntersection2: invalid else')
     }
   }
 
-  return record(fields) as any
+  // results in a new record type
+  return record<any>(fields)
+}
+
+// An intersection of a union with another type
+function unionIntersection2<A, B>(
+  u: Runtype<A>,
+  b: Runtype<B>,
+): Runtype<A & B> {
+  const unionRuntypes: Runtype<any>[] = (u as any).unions
+
+  if (
+    !unionRuntypes ||
+    !Array.isArray(unionRuntypes) ||
+    !unionRuntypes.length
+  ) {
+    throw new RuntypeUsageError(
+      'unionIntersection2: first argument is not a union type',
+    )
+  }
+
+  // results in a new union (because the intersection distributes over the union)
+  return union<Runtype<any>[]>(
+    ...unionRuntypes.map((a) => intersection2<any, any>(a, b)),
+  )
 }
 
 /**
- * An intersection of two runtypes
+ * An intersection of two runtypes.
+ *
+ * In case the intersection contains records or unions (of records), create a
+ * completely new record or union runtype.
  */
 function intersection2<A, B>(a: Runtype<A>, b: Runtype<B>): Runtype<A & B>
 function intersection2(a: Runtype<any>, b: Runtype<any>): Runtype<any> {
   if ('fields' in a && 'fields' in b) {
-    return recordIntersection(a, b)
+    return recordIntersection2(a, b)
+  } else if ('unions' in a && 'fields' in b) {
+    return unionIntersection2(a, b)
+  } else if ('unions' in b && 'fields' in a) {
+    return unionIntersection2(b, a)
+  } else if ('fields' in a || 'fields' in b) {
+    // Does such an intersection (e.g. string | {a: number} even make sense?
+    // And how would you implement it?
+    throw new RuntypeUsageError(
+      'intersection2: cannot intersect a base type with a record',
+    )
   } else {
     const isPure = isPureRuntype(a) && isPureRuntype(b)
 

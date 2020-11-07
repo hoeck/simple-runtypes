@@ -871,6 +871,53 @@ describe('discriminatedUnion', () => {
         JSON.parse(`{"key": "${a}", "value": "asd"}`),
       ),
     )
+
+    // proto hacks
+    expectRejectValues(runtypeUnion, [
+      JSON.parse(`{"__proto__": {"key": "a", "value": "asd"}}`),
+      JSON.parse(
+        `{"__proto__": {"key": "a", "value": "asd"}, "key": "a", "value": "asd"}`,
+      ),
+    ])
+  })
+
+  describe('intersecting with a (discriminated) union', () => {
+    const runtypeUnion = sr.union(runtypeA, runtypeB, runtypeC)
+
+    const additionalAttributes = sr.record({
+      additional: sr.number(),
+      optional: sr.optional(sr.boolean()),
+    })
+
+    const runtype = sr.intersection(runtypeUnion, additionalAttributes)
+
+    it('should accept valid objects', () => {
+      expectAcceptValuesPure(runtype, [
+        { tag: 'b_tag', name: 'foo', additional: 123 },
+        { tag: 'a_tag', id: 0, additional: 123 },
+        { tag: 'a_tag', id: 0, additional: 123, optional: undefined },
+        { tag: 'a_tag', id: 0, additional: 123, optional: true },
+      ])
+    })
+
+    it('should reject invalid objects', () => {
+      expectRejectValues(runtype, [
+        { name: 'foo', additional: 123 }, // tag missing
+        { tag: 'c_tag', id: 0, additional: 123 }, // tag wrong
+        { tag: 'a_tag', additional: 123 }, // attr missin
+        { tag: 'a_tag', id: 0 }, // additional missing
+        { tag: 'a_tag', id: 0, optional: 123 }, // additional missing
+        { tag: 'a_tag', id: 0, additional: '123', optional: [] }, // optional wrong
+
+        // garbage
+        {},
+        [],
+        null,
+        undefined,
+        0,
+        NaN,
+      ])
+    })
   })
 })
 
@@ -884,9 +931,9 @@ describe('intersection', () => {
     c: sr.boolean(),
   })
 
-  it('should accept intersected records', () => {
-    const runtype = sr.intersection(recordA, recordB)
+  const runtype = sr.intersection(recordA, recordB)
 
+  it('should accept intersected records', () => {
     expectAcceptValuesPure(runtype, [
       { c: true, b: 'foo', a: 1 },
       { c: false, a: 2 },
@@ -894,9 +941,7 @@ describe('intersection', () => {
     ])
   })
 
-  it('should reject invalid', () => {
-    const runtype = sr.intersection(recordA, recordB)
-
+  it('should reject invalid records', () => {
     expectRejectValues(runtype, [
       { c: true, b: 'foo', a: 1, d: [] },
       { c: true, b: 'foo', a: 'bar' },
@@ -907,6 +952,12 @@ describe('intersection', () => {
       NaN,
       99,
     ])
+  })
+
+  it('should not support intersecting basic types and records', () => {
+    expect(() => sr.intersection(sr.string(), recordA)).toThrow(
+      'cannot intersect a base type with a record',
+    )
   })
 })
 

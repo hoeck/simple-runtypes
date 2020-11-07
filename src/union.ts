@@ -52,7 +52,7 @@ function internalDiscriminatedUnion(
 
   const isPure = runtypes.every((t) => isPureRuntype(t))
 
-  return internalRuntype((v, failOrThrow) => {
+  const resultingRuntype = internalRuntype((v, failOrThrow) => {
     const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(o)) {
@@ -74,6 +74,11 @@ function internalDiscriminatedUnion(
 
     return (rt as InternalRuntype)(v, failOrThrow)
   }, isPure)
+
+  // keep the union runtypes around to implement combinators that need to distribute across unions like intersection
+  ;(resultingRuntype as any).unions = runtypes
+
+  return resultingRuntype
 }
 
 // given a list of runtypes, return the name of the key that acts as the
@@ -143,7 +148,7 @@ export function union<V extends Runtype<any>[]>(
   }
 
   // optimize: when the union is a discriminating union, find the
-  // discriminating key and use it to efficiently validate the union
+  // discriminating key and use it to look up the runtype for the keys value
   const commonKey = findDiscriminatingUnionKey(runtypes)
 
   if (commonKey !== undefined) {
