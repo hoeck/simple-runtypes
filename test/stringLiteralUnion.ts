@@ -1,9 +1,7 @@
 import {
-  expectAcceptValuesImpure,
   expectAcceptValuesPure,
   expectRejectObjectAttributes,
   expectRejectValues,
-  objectAttributes,
   st,
 } from './helpers'
 
