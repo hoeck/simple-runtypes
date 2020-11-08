@@ -1,3 +1,7 @@
+### 6.1.0
+
+- support intersection of unions and records
+
 ### 6.0.1
 
 - fix: rename `useRuntype` to `use`
