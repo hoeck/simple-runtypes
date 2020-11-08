@@ -1,5 +1,8 @@
 import * as sr from '../src'
 
+// re-export so tests don't depend on the weird src directory
+export * as st from '../src'
+
 // private imports
 import { failSymbol } from '../src/runtype'
 

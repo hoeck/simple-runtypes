@@ -251,6 +251,8 @@ Advanced Runtypes
 
 ### Roadmap / Todos
 
+- rename `stringLiteralUnion` to `literals` or `literalUnion` and make it work
+  on all types that `literal` accepts
 - rename [`sloppyRecord`](src/record.ts#L97) to `record.sloppy` because I need
   the "sloppy"-concept for other runtypes too: e.g. `nullable.sloppy` - a
   `Runtype<T | null>` that also accepts `undefined` which is useful to slowly
