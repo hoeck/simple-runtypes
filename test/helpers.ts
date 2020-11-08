@@ -1,62 +1,65 @@
-import * as sr from '../src'
+import * as st from '../src'
 
-// re-export so tests don't depend on the weird src directory
+// // re-export so tests don't depend on the weird src directory
 export * as st from '../src'
 
-// private imports
-import { failSymbol } from '../src/runtype'
-
+// impure: the value returned by the runtype must have been modified in-place
+// and thus its a new value
 export function expectAcceptValuesImpure<T>(
-  rt: sr.Runtype<T>,
+  rt: st.Runtype<T>,
   values: unknown[],
 ): void {
   values.forEach((v) => {
-    // use internal call protocol so that it does not raise but return sth
-    // that can be reported by jest
-    expect((rt as any)(v, failSymbol)).toEqual(v)
-    expect((rt as any)(v, failSymbol)).not.toBe(v)
+    const result = st.use(rt, v)
+
+    expect(result).toEqual({ ok: true, result: v })
+    expect(result.ok && result.result).not.toBe(v)
+
+    // check both, the error throwing api and the wrapped-result returning
+    // one but only expect on the wrapped-result one bc its easier to report with jest
+    expect(() => rt(v)).not.toThrow()
   })
 }
 
+// pure: the value returned by the runtype must *not* have been modified and
+// is exactly the same value
 export function expectAcceptValuesPure<T>(
-  rt: sr.Runtype<T>,
+  rt: st.Runtype<T>,
   values: unknown[],
 ): void {
   values.forEach((v) => {
-    // use internal call protocol so that it does not raise but return sth
-    // that can be reported by jest
-    expect((rt as any)(v, failSymbol)).toBe(v)
+    const result = st.use(rt, v)
+
+    expect(result).toEqual({ ok: true, result: v })
+    expect(result.ok && result.result).toBe(v)
+
+    expect(() => rt(v)).not.toThrow()
   })
 }
 
 export function expectRejectValues<T>(
-  rt: sr.Runtype<T>,
+  rt: st.Runtype<T>,
   values: unknown[],
   error?: string | RegExp,
 ): void {
-  // when using them internally, they return a Fail
+  // use with an explicit validation result
   values.forEach((v) => {
-    expect(() => (rt as any)(v, failSymbol)).not.toThrow()
-    expect((rt as any)(v, failSymbol)).toEqual({
-      [failSymbol]: true,
-      reason: expect.any(String),
-      path: expect.any(Array),
+    const result = st.use(rt, v)
+
+    expect(result).toEqual({
+      ok: false,
+      error: expect.any(Object),
     })
+
+    expect(result.ok === false && st.getFormattedError(result.error)).toMatch(
+      error || /.*/,
+    )
   })
 
-  // when using runtypes as a normal user, they respond with throwing errors
+  // use with exceptions
   values.forEach((v) => {
     expect(() => rt(v)).toThrow(error || /.*/)
   })
-
-  // when passing something that is not a failSymbol or undefined, they
-  // respond with a usage error
-  expect(() => (rt as any)(Symbol('wrong'), null)).toThrow(
-    /failOrThrow must be undefined or the failSymbol/,
-  )
-  expect(() => (rt as any)(Symbol('wrong'), 0)).toThrow(
-    /failOrThrow must be undefined or the failSymbol/,
-  )
 }
 
 // properties defined on all js objects,
@@ -77,10 +80,20 @@ export const objectAttributes = [
 ]
 
 export function expectRejectObjectAttributes(
-  rt: sr.Runtype<any>,
+  rt: st.Runtype<any>,
   error?: string | RegExp,
 ): void {
   objectAttributes.forEach((a) => {
+    const result = st.use(rt, a)
+    expect(result).toEqual({
+      ok: false,
+      error: expect.any(Object),
+    })
+
+    expect(result.ok === false && st.getFormattedError(result.error)).toMatch(
+      error || /.*/,
+    )
+
     expect(() => rt(a)).toThrow(error || /.*/)
   })
 }
