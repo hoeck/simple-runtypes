@@ -68,7 +68,29 @@ export function getFormattedErrorValue(
   e: RuntypeErrorInfo,
   maxLength = 512,
 ): string {
-  return debugValue(e.value, maxLength)
+  if (!isRuntypeErrorPath(e)) {
+    return '(error is not a RuntypeError!)'
+  }
+
+  const { value: resolvedValue } = e.path.reduceRight(
+    ({ value, isResolvable }, key) => {
+      // we have not not been able to resolve the value previously - don't try any further
+      if (!isResolvable) {
+        return { value, isResolvable }
+      }
+
+      // try to resolve key within objects or arrays
+      if (key in value) {
+        return { value: value[key], isResolvable }
+      }
+
+      // otherwise return last value successfully resolved and mark as "not further resolvable"
+      return { value, isResolvable: false }
+    },
+    { value: e.value, isResolvable: true },
+  )
+
+  return debugValue(resolvedValue, maxLength)
 }
 
 /**
