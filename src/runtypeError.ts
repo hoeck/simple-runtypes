@@ -12,6 +12,12 @@ export function debugValue(v: unknown, maxLength = 512): string {
     return 'undefined'
   }
 
+  // `JSON.stringify(fn)` would return `undefined` thus `s.length` would become
+  // `undefined.length` which would fail
+  if (typeof v === 'function') {
+    return v.toString()
+  }
+
   try {
     s = JSON.stringify(v)
   } catch {
@@ -103,9 +109,11 @@ export function getFormattedError(
   maxLength = 512,
 ): string {
   const rawPath = getFormattedErrorPath(e)
-  const path = rawPath ? `<value>.${rawPath}` : '<value>'
+  const path = rawPath
+    ? `<value>${rawPath.startsWith('[') ? '' : '.'}${rawPath}`
+    : '<value>'
   const label = 'name' in e ? `${e.name}: ` : ''
   const value = getFormattedErrorValue(e, maxLength)
 
-  return `${label}${e.reason} at \`${path}\` in \`${value}\``
+  return `${label}${e.reason} at \`${path}\` for \`${value}\``
 }
