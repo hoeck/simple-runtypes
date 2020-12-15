@@ -26,10 +26,17 @@ export function debugValue(v: unknown, maxLength = 512): string {
 }
 
 /**
+ * Return boolean to indicate whether passed object seems to be an RuntypeError
+ */
+function isRuntypeErrorPath(e: RuntypeErrorInfo): boolean {
+  return Array.isArray(e.path)
+}
+
+/**
  * Return the object path at which the error occured.
  */
 export function getFormattedErrorPath(e: RuntypeErrorInfo): string {
-  if (!Array.isArray(e.path)) {
+  if (!isRuntypeErrorPath(e)) {
     return '(error is not a RuntypeError!)'
   }
 
@@ -37,7 +44,7 @@ export function getFormattedErrorPath(e: RuntypeErrorInfo): string {
   // to build it that way (just an [].push)
   const pathInRootElementFirstOrder = [...e.path].reverse()
 
-  return pathInRootElementFirstOrder
+  const formattedErrorPath = pathInRootElementFirstOrder
     .map((k) =>
       typeof k === 'number'
         ? `[${k}]`
@@ -46,7 +53,10 @@ export function getFormattedErrorPath(e: RuntypeErrorInfo): string {
         : `['${JSON.stringify(k)}']`,
     )
     .join('')
-    .slice(1)
+
+  return formattedErrorPath.startsWith('.')
+    ? formattedErrorPath.slice(1)
+    : formattedErrorPath
 }
 
 /**
