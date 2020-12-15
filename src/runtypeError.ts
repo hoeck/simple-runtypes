@@ -41,7 +41,7 @@ export function getFormattedErrorPath(e: RuntypeErrorInfo): string {
     .map((k) =>
       typeof k === 'number'
         ? `[${k}]`
-        : /^([A-z0-9_])+$/.test(k)
+        : /^\w+$/.test(k)
         ? `.${k}`
         : `['${JSON.stringify(k)}']`,
     )
