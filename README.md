@@ -248,9 +248,11 @@ Combinators
 - [`union`](src/union.ts#L138)
 - [`intersection`](src/intersection.ts#L72)
 - [`omit`](src/omit.ts#L8)
+- TODO: `get` - similar to Type[key]
 
 ### Roadmap / Todos
 
+- `size` - a meta-runtype that imposes a size limit on types, maybe via convert-to-json and .length on the value passed to it
 - rename `stringLiteralUnion` to `literals` or `literalUnion` and make it work
   on all types that `literal` accepts
 - rename [`sloppyRecord`](src/record.ts#L97) to `record.sloppy` because I need
