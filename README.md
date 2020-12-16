@@ -62,7 +62,7 @@ userRuntype({id: 1, name: 'matt'})
 // => {id: 1, name: 'matt'}
 
 userRuntype({id: 1, name: 'matt', isAdmin: true})
-// throws a st.RuntypeError 'invalid field 'isAdmin' in data
+// throws an st.RuntypeError: "invalid field 'isAdmin' in data"
 ```
 
 You can also [`use`](src/custom.ts#L51) a runtype without throwing errors:
@@ -75,7 +75,7 @@ st.use(userRuntype, {id: 1, name: 'matt', isAdmin: true})
 // => {ok: false, error: FAIL}
 
 st.getFormattedError(FAIL)
-// => 'invalid keys in record ["c"] at `<value>` in `{"a":1,"b":"as","c":false}`'
+// => 'invalid keys in record ["isAdmin"] at `<value>` in `{"id":1,"name": "matt", ... }`'
 ```
 
 Not throwing errors is way more efficient but less convenient as you always
@@ -222,6 +222,7 @@ Basic runtypes that match TS / Javascript types:
 - [`null`](src/null.ts#6)
 - [`undefined`](src/undefined.ts#7)
 - [`enum`](src/enum.ts#9)
+- [`literal`](src/literal.ts#L10)
 
 Meta runtypes
 
@@ -240,9 +241,8 @@ Objects and Array Runtypes
 - [`numberIndex`](src/numberIndex.ts#L18)
 - [`stringIndex`](src/stringIndex.ts#L17)
 
-Advanced Runtypes
+Combinators
 
-- [`literal`](src/literal.ts#L10)
 - [`optional`](src/optional.ts#L11)
 - [`nullable`](src/nullable.ts#L11)
 - [`union`](src/union.ts#L138)

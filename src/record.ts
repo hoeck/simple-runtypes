@@ -11,9 +11,6 @@ import {
 } from './runtype'
 import { debugValue } from './runtypeError'
 
-/**
- * An object with defined keys and values.
- */
 function internalRecord<T extends object>(
   typemap: { [K in keyof T]: Runtype<T[K]> },
   sloppy: boolean,
@@ -88,12 +85,29 @@ export function getRecordFields(
   return anyRt.fields
 }
 
+/**
+ * An object with defined keys and values.
+ *
+ * In contrast to typescript types, objects checked by this runtype will fail
+ * if they have any additional keys (strict checking) not specified in
+ * typemap.
+ *
+ * Keeps you save from unwanted propertiers and evil __proto__ injections.
+ */
 export function record<T extends object>(
   typemap: { [K in keyof T]: Runtype<T[K]> },
 ): Runtype<T> {
   return internalRecord(typemap, false)
 }
 
+/**
+ * Like record but ignore unknown keys.
+ *
+ * Returns a new object that only contains the keys specified in the typemap.
+ * Additional keys are ignored.
+ *
+ * Keeps you save from unwanted propertiers and evil __proto__ injections.
+ */
 export function sloppyRecord<T extends object>(
   typemap: { [K in keyof T]: Runtype<T[K]> },
 ): Runtype<T> {
