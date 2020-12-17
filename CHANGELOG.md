@@ -1,3 +1,7 @@
+### 6.1.1
+
+- fix and improve error value and path formatting (shout outs to @pabra for the patch)
+
 ### 6.1.0
 
 - support intersection of unions and records
