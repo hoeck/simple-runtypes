@@ -1,6 +1,6 @@
 [![npm version](https://badge.fury.io/js/simple-runtypes.svg)](https://www.npmjs.com/package/simple-runtypes)
 [![unit-tests](https://github.com/hoeck/simple-runtypes/workflows/unit-tests/badge.svg?branch=master)](https://github.com/hoeck/simple-runtypes/actions?query=workflow%3Aunit-tests+branch%3Amaster)
-[![npm-publish](https://github.com/hoeck/simple-runtypes/workflows/npm-publish/badge.svg?branch=master)](https://github.com/hoeck/simple-runtypes/actions?query=workflow%3Anpm-publish+branch%3Amaster)
+[![npm-publish](https://github.com/hoeck/simple-runtypes/workflows/npm-publish/badge.svg)](https://github.com/hoeck/simple-runtypes/actions?query=workflow%3Anpm-publish)
 
 ## Preface
 
