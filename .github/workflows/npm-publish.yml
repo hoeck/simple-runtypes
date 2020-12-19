@@ -11,6 +11,18 @@
 #   1. commit (and maybe push) all your changes and ensure action "unit-tests" succeeds
 #   2. create a new git version tag: `yarn version --patch` (see yarn help version for more options)
 #   3. push new tag to github: `git push --follow-tags`
+#
+# Re-run the release action (after an error)
+#
+# Because the action is only triggered when a new tag is pushed, you'll need to:
+#
+#   1. delete the failed version on the remote and locally:
+#        `git push --delete origin v1.2.3`
+#        `git tag --delete v1.2.3`
+#   2. recreate the annotated tag:
+#        `git tag -a v1.2.3 -m v1.2.3
+#   3. push
+#        `git push --follow-tags`
 
 name: npm-publish
 
