@@ -22,16 +22,18 @@ const stringRuntype = internalRuntype<string>((v, failOrThrow) => {
  *
  *   maxLength .. reject strings that are longer than that
  *   trim .. when true, remove leading and trailing spaces from the string
+ *   match .. reject strings that do not match against provided RegExp
  */
 export function string(options?: {
   maxLength?: number
   trim?: boolean
+  match?: RegExp
 }): Runtype<string> {
   if (!options) {
     return stringRuntype
   }
 
-  const { maxLength, trim } = options
+  const { maxLength, trim, match } = options
 
   const isPure = !trim // trim modifies the string
 
@@ -48,6 +50,10 @@ export function string(options?: {
         `expected the string length to not exceed ${maxLength}`,
         v,
       )
+    }
+
+    if (match !== undefined && !match.test(s)) {
+      return createFail(failOrThrow, `expected the string to match ${match}`, v)
     }
 
     return trim ? s.trim() : s
