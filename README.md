@@ -22,6 +22,7 @@ Thats how runtypes work.
     + [Optional Properties](#optional-properties)
     + [Nesting](#nesting)
     + [Discriminating Unions](#discriminating-unions)
+    + [Custom Runtypes](#custom-runtypes)
   * [Reference](#reference)
   * [Roadmap / Todos](#roadmap--todos)
 
@@ -65,7 +66,7 @@ userRuntype({id: 1, name: 'matt', isAdmin: true})
 // throws an st.RuntypeError: "invalid field 'isAdmin' in data"
 ```
 
-You can also [`use`](src/custom.ts#L51) a runtype without throwing errors:
+Invoke a runtype with [`use`](src/custom.ts#L51) to get a plain value back instead of throwing errors:
 
 ```typescript
 st.use(userRuntype, {id: 1, name: 'matt'})
@@ -78,15 +79,15 @@ st.getFormattedError(FAIL)
 // => 'invalid keys in record ["isAdmin"] at `<value>` in `{"id":1,"name": "matt", ... }`'
 ```
 
-Not throwing errors is way more efficient but less convenient as you always
-have to check the resulting type.
+Not throwing errors is way more efficient and less obscure.
+Throwing errors and catching them outside may be more convenient in some situations.
 
 ## Why?
 
 Why should I use this over the plethora of [other](https://github.com/moltar/typescript-runtime-type-benchmarks#packages-compared) runtype validation libraries available?
 
 1. Written in and for Typescript
-2. Strict by default
+2. Strict by default (e.g. safe against proto injection attacks)
 3. Supports efficient discriminated unions
 4. Frontend-friendly (no `eval`, small [footprint](https://bundlephobia.com/result?p=simple-runtypes), no dependencies)
 6. Fast (of all non-eval based libs, only one is faster according to the [benchmark](https://github.com/moltar/typescript-runtime-type-benchmarks))
@@ -113,14 +114,14 @@ interface Runtype<T> {
 ```
 
 Runtypes are constructed by calling factory functions.
-For instance, [`string`](src/string.ts#L26) creates and retuns a string runtype.
+For instance, [`string`](src/string.ts#L27) creates and retuns a string runtype.
 Check the factory functions documentation for more details.
 
 ### Usage Examples
 
 #### Strict Property Checks
 
-When using [`record`](src/record.ts#L91), any properties which are not defined in the runtype will cause the runtype to fail:
+When using [`record`](src/record.ts#L97), any properties which are not defined in the runtype will cause the runtype to fail:
 
 ```typescript
 const strict = st.record({name: st.string()})
@@ -138,7 +139,7 @@ strict({name: 'foo', other: 123})
 // => {name: foo, other: undefined}
 ```
 
-Use [`sloppyRecord`](src/record.ts#L97) to only validate known properties and remove everything else:
+Use [`sloppyRecord`](src/record.ts#L111) to only validate known properties and remove everything else:
 
 ```typescript
 const sloppy = st.sloppyRecord({name: st.string()})
@@ -147,7 +148,7 @@ strict({name: 'foo', other: 123, bar: []})
 // => {name: foo}
 ```
 
-Using any of [`record`](src/record.ts#L91) or [`sloppyRecord`](src/record.ts#L97) will keep you safe from any `__proto__` injection or overriding attempts.
+Using any of [`record`](src/record.ts#L97) or [`sloppyRecord`](src/record.ts#L111) will keep you safe from any `__proto__` injection or overriding attempts.
 
 #### Optional Properties
 
@@ -162,7 +163,7 @@ const squareConfigRuntype = st.record({
 
 #### Nesting
 
-Collection runtypes such as [`record`](src/record.ts#L91), [`array`](src/array.ts#L28), [`tuple`](src/tuple.ts#L42) take runtypes as their parameters:
+Collection runtypes such as [`record`](src/record.ts#L97), [`array`](src/array.ts#L28), [`tuple`](src/tuple.ts#L42) take runtypes as their parameters:
 
 ```typescript
 const nestedRuntype = st.record({
@@ -178,7 +179,7 @@ nestedRuntype({
 
 #### Discriminating Unions
 
-Simple-runtypes supports [Discriminating Unions](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#discriminating-unions) via the [`union`](src/union.ts#L138) runtype.
+Simple-runtypes supports [Discriminating Unions](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#discriminating-unions) via the [`union`](src/union.ts#L143) runtype.
 
 The example found in the [Typescript Handbook](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#discriminating-unions) translated to simple-runtypes:
 
@@ -212,12 +213,33 @@ type NetworkState = ReturnType<networkStateRuntype>
 
 Finding the runtype to validate a specific discriminating union with is done efficiently with a [`Map`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map).
 
+#### Custom Runtypes
+
+Write your own runtypes as plain functions, e.g. if you want to turn a string into a `BigInt`:
+
+```typescript
+const bigIntStringRuntype = st.string({match: /^-?[0-9]+n$/})
+
+const bigIntRuntype = st.runtype((v) => {
+    const result = st.use(bigIntStringRuntype, v)
+
+    if (!result.ok) {
+        return result.error
+    }
+
+    return BigInt(result.result.slice(0, -1))
+})
+
+bigIntRuntype("123n") // => 123n
+bigIntRuntype("2.2") // => error: "expected string to match ..."
+```
+
 ### Reference
 
 Basic runtypes that match TS / Javascript types:
 
 - [`number`](src/number.ts#L13)
-- [`string`](src/string.ts#L26)
+- [`string`](src/string.ts#L27)
 - [`boolean`](src/boolean.ts#L14)
 - [`null`](src/null.ts#6)
 - [`undefined`](src/undefined.ts#7)
@@ -236,8 +258,8 @@ Objects and Array Runtypes
 
 - [`tuple`](src/tuple.ts#L42)
 - [`array`](src/array.ts#L28)
-- [`record`](src/record.ts#L91)
-- [`sloppyRecord`](src/record.ts#L97)
+- [`record`](src/record.ts#L97)
+- [`sloppyRecord`](src/record.ts#L111)
 - [`numberIndex`](src/numberIndex.ts#L18)
 - [`stringIndex`](src/stringIndex.ts#L17)
 
@@ -245,17 +267,17 @@ Combinators
 
 - [`optional`](src/optional.ts#L11)
 - [`nullable`](src/nullable.ts#L11)
-- [`union`](src/union.ts#L138)
-- [`intersection`](src/intersection.ts#L72)
+- [`union`](src/union.ts#L143)
+- [`intersection`](src/intersection.ts#L110)
 - [`omit`](src/omit.ts#L8)
 - TODO: `get` - similar to Type[key]
 
 ### Roadmap / Todos
 
 - `size` - a meta-runtype that imposes a size limit on types, maybe via convert-to-json and .length on the value passed to it
-- rename `stringLiteralUnion` to `literals` or `literalUnion` and make it work
-  on all types that `literal` accepts
-- rename [`sloppyRecord`](src/record.ts#L97) to `record.sloppy` because I need
+- rename [`stringLiteralUnion`](src/stringLiteralUnion.ts#L6) to `literals` or `literalUnion` and make it work
+  on all types that [`literal`](src/literal.ts#L10) accepts
+- rename [`sloppyRecord`](src/record.ts#L111) to `record.sloppy` because I need
   the "sloppy"-concept for other runtypes too: e.g. `nullable.sloppy` - a
   `Runtype<T | null>` that also accepts `undefined` which is useful to slowly
   add new nullable fields to existing json database records

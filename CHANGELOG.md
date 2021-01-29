@@ -1,3 +1,7 @@
+### 6.2.0
+
+- add `match` option to `string` to test the string against a regular expression
+
 ### 6.1.1
 
 - fix and improve error value and path formatting (shout outs to @pabra for the patch)
