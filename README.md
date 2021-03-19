@@ -221,13 +221,13 @@ Write your own runtypes as plain functions, e.g. if you want to turn a string in
 const bigIntStringRuntype = st.string({match: /^-?[0-9]+n$/})
 
 const bigIntRuntype = st.runtype((v) => {
-    const result = st.use(bigIntStringRuntype, v)
+    const stringCheck = st.use(bigIntStringRuntype, v)
 
-    if (!result.ok) {
-        return result.error
+    if (!stringCheck.ok) {
+        return stringCheck.error
     }
 
-    return BigInt(result.result.slice(0, -1))
+    return BigInt(stringCheck.result.slice(0, -1))
 })
 
 bigIntRuntype("123n") // => 123n
