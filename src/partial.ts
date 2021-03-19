@@ -19,7 +19,7 @@ export function partial<T, K extends keyof T>(
   const newRecordFields: any = {}
 
   for (const k in fields) {
-    if (fields.hasOwnProperty(k)) {
+    if (Object.prototype.hasOwnProperty.call(fields, k)) {
       // TODO: detect whether field is already optional and do not apply
       // optional a second time
       newRecordFields[k] = optional(fields[k])
