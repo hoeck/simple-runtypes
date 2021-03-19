@@ -1,3 +1,7 @@
+### 6.3.0
+
+- add `partial` combinator runtype
+
 ### 6.2.0
 
 - add `match` option to `string` to test the string against a regular expression

@@ -270,6 +270,8 @@ Combinators
 - [`union`](src/union.ts#L143)
 - [`intersection`](src/intersection.ts#L110)
 - [`omit`](src/omit.ts#L8)
+- [`pick`](src/pick.ts#L7)
+- [`partial`](src/partial.ts#L10)
 - TODO: `get` - similar to Type[key]
 
 ### Roadmap / Todos

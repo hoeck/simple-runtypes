@@ -37,8 +37,9 @@ export { record, sloppyRecord } from './record'
 export { stringIndex } from './stringIndex'
 export { numberIndex } from './numberIndex'
 
-// advanced types
+// advanced / utility types
 export { intersection } from './intersection'
 export { omit } from './omit'
+export { partial } from './partial'
 export { pick } from './pick'
 export { union } from './union'
