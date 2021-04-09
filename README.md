@@ -157,7 +157,7 @@ Use the [`optional`](src/optional.ts#L11) runtype to create [optional properties
 ```typescript
 const squareConfigRuntype = st.record({
   color: st.optional(st.string()),
-  width?: st.optional(st.number()),
+  width: st.optional(st.number()),
 })
 ```
 
