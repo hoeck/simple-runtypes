@@ -31,6 +31,11 @@ describe('sloppyRecord', () => {
 
     value = runtype({ a: 0, b: undefined })
     expect(value).toEqual({ a: 0, b: undefined })
+    expect(value).toEqual({ a: 0 })
+
+    value = runtype({ a: 0 })
+    expect(value).toEqual({ a: 0, b: undefined })
+    expect(value).toEqual({ a: 0 })
   })
 
   it('accepts nested records', () => {
