@@ -1,5 +1,6 @@
 import { union } from './union'
 import { record } from './record'
+import type { RecordWithOptional } from './record'
 import {
   InternalRuntype,
   internalRuntype,
@@ -11,10 +12,10 @@ import {
 } from './runtype'
 
 // An intersection of two record runtypes
-function recordIntersection2<A, B>(
+function recordIntersection2<A extends object, B extends object>(
   recordA: Runtype<A>,
   recordB: Runtype<B>,
-): Runtype<A & B> {
+): Runtype<RecordWithOptional<A & B>> {
   const fields: { [key: string]: Runtype<any> } = {}
   const a = (recordA as any).fields
   const b = (recordB as any).fields
@@ -32,7 +33,7 @@ function recordIntersection2<A, B>(
   }
 
   // results in a new record type
-  return record<any>(fields)
+  return record<any>(fields as any) as any
 }
 
 // An intersection of a union with another type

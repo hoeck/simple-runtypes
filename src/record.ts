@@ -19,7 +19,7 @@ type ExcludeUndefinedSymbol<T extends object> = {
 type OptionalKeys<T extends object> = {
   [K in keyof T]: UndefinedSymbol extends T[K] ? K : never
 }
-type RecordWithOptional<T extends object> = SmoothRecord<
+export type RecordWithOptional<T extends object> = SmoothRecord<
   Omit<T, OptionalKeys<T>[keyof T]> &
     Partial<ExcludeUndefinedSymbol<Pick<T, OptionalKeys<T>[keyof T]>>>
 >
