@@ -17,6 +17,18 @@ function internalRecord<T extends object>(
 ): Runtype<T> {
   const isPure = Object.values(typemap).every((t: any) => isPureRuntype(t))
   const copyObject = sloppy || !isPure
+  const getUnknownKeys = (o: object) => {
+    const keys = []
+    for (const k in o) {
+      if (!Object.prototype.hasOwnProperty.call(o, k)) {
+        continue
+      }
+      if (!Object.prototype.hasOwnProperty.call(typemap, k)) {
+        keys.push(k)
+      }
+    }
+    return keys
+  }
 
   const rt: Runtype<T> = internalRuntype((v, failOrThrow) => {
     const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
@@ -43,9 +55,7 @@ function internalRecord<T extends object>(
     }
 
     if (!sloppy) {
-      const unknownKeys = Object.keys(o).filter(
-        (k) => !Object.prototype.hasOwnProperty.call(typemap, k),
-      )
+      const unknownKeys = getUnknownKeys(o)
 
       if (unknownKeys.length) {
         return createFail(
