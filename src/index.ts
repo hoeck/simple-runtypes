@@ -34,8 +34,7 @@ export { stringAsInteger } from './stringAsInteger'
 export { tuple } from './tuple'
 export { array } from './array'
 export { record, sloppyRecord } from './record'
-export { stringIndex } from './stringIndex'
-export { numberIndex } from './numberIndex'
+export { dictionary } from './dictionary'
 
 // advanced / utility types
 export { intersection } from './intersection'

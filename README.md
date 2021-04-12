@@ -260,8 +260,7 @@ Objects and Array Runtypes
 - [`array`](src/array.ts#L28)
 - [`record`](src/record.ts#L97)
 - [`sloppyRecord`](src/record.ts#L111)
-- [`numberIndex`](src/numberIndex.ts#L18)
-- [`stringIndex`](src/stringIndex.ts#L17)
+- [`dictionary`](src/dictionary.ts#L81)
 
 Combinators
 
