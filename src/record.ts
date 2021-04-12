@@ -11,11 +11,25 @@ import {
 } from './runtype'
 import { debugValue } from './runtypeError'
 
+function isPureTypemap(typemap: object) {
+  for (const k in typemap) {
+    if (!Object.prototype.hasOwnProperty.call(typemap, k)) {
+      continue
+    }
+
+    if (!isPureRuntype(typemap[k as keyof typeof typemap])) {
+      return false
+    }
+  }
+
+  return true
+}
+
 function internalRecord<T extends object>(
   typemap: { [K in keyof T]: Runtype<T[K]> },
   sloppy: boolean,
 ): Runtype<T> {
-  const isPure = Object.values(typemap).every((t: any) => isPureRuntype(t))
+  const isPure = isPureTypemap(typemap)
   const copyObject = sloppy || !isPure
 
   const rt: Runtype<T> = internalRuntype((v, failOrThrow) => {
