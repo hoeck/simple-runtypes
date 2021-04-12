@@ -1,3 +1,9 @@
+### master
+
+- add `dictionary` and remove `numberIndex` and `stringIndex`
+  Use `dictionary(stringAsInteger(), otherType)` to replace `numberIndex` and
+  `dictionary(string(), otherType)` to replace `stringIndex`.
+
 ### 6.3.0
 
 - add `partial` combinator runtype
