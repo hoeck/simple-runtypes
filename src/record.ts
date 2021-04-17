@@ -12,14 +12,15 @@ import {
 import { debugValue } from './runtypeError'
 import type { UndefinedSymbol } from './optional'
 
-type SmoothRecord<T extends object> = { [K in keyof T]: T[K] }
+// force types to collapse into "smooth" Record with optional keys
+type CollapsedRecord<T> = T extends infer U ? { [K in keyof U]: U[K] } : never
 type ExcludeUndefinedSymbol<T extends object> = {
   [K in keyof T]: Exclude<T[K], UndefinedSymbol>
 }
 type OptionalKeys<T extends object> = {
   [K in keyof T]: UndefinedSymbol extends T[K] ? K : never
 }
-export type RecordWithOptional<T extends object> = SmoothRecord<
+export type RecordWithOptional<T extends object> = CollapsedRecord<
   Omit<T, OptionalKeys<T>[keyof T]> &
     Partial<ExcludeUndefinedSymbol<Pick<T, OptionalKeys<T>[keyof T]>>>
 >
@@ -97,7 +98,7 @@ function internalRecord<T extends object>(
   // eslint-disable-next-line no-extra-semi
   ;(rt as any).fields = fields
 
-  return rt
+  return rt as any
 }
 
 export function getRecordFields(
