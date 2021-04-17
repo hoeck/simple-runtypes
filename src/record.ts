@@ -10,6 +10,19 @@ import {
   Runtype,
 } from './runtype'
 import { debugValue } from './runtypeError'
+import type { UndefinedSymbol } from './optional'
+
+type SmoothRecord<T extends object> = { [K in keyof T]: T[K] }
+type ExcludeUndefinedSymbol<T extends object> = {
+  [K in keyof T]: Exclude<T[K], UndefinedSymbol>
+}
+type OptionalKeys<T extends object> = {
+  [K in keyof T]: UndefinedSymbol extends T[K] ? K : never
+}
+type RecordWithOptional<T extends object> = SmoothRecord<
+  Omit<T, OptionalKeys<T>[keyof T]> &
+    Partial<ExcludeUndefinedSymbol<Pick<T, OptionalKeys<T>[keyof T]>>>
+>
 
 function isPureTypemap(typemap: object) {
   for (const k in typemap) {
@@ -28,7 +41,7 @@ function isPureTypemap(typemap: object) {
 function internalRecord<T extends object>(
   typemap: { [K in keyof T]: Runtype<T[K]> },
   sloppy: boolean,
-): Runtype<T> {
+): Runtype<RecordWithOptional<T>> {
   const isPure = isPureTypemap(typemap)
   const copyObject = sloppy || !isPure
 
@@ -110,7 +123,7 @@ export function getRecordFields(
  */
 export function record<T extends object>(
   typemap: { [K in keyof T]: Runtype<T[K]> },
-): Runtype<T> {
+): Runtype<RecordWithOptional<T>> {
   return internalRecord(typemap, false)
 }
 
@@ -124,6 +137,6 @@ export function record<T extends object>(
  */
 export function sloppyRecord<T extends object>(
   typemap: { [K in keyof T]: Runtype<T[K]> },
-): Runtype<T> {
+): Runtype<RecordWithOptional<T>> {
   return internalRecord(typemap, true)
 }
