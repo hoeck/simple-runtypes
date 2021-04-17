@@ -33,7 +33,7 @@ function recordIntersection2<A extends object, B extends object>(
   }
 
   // results in a new record type
-  return record<any>(fields as any) as any
+  return record(fields) as any
 }
 
 // An intersection of a union with another type

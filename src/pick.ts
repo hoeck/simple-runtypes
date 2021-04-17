@@ -5,7 +5,7 @@ import { Runtype, RuntypeUsageError } from './runtype'
 /**
  * Build a new record runtype that contains some keys from the original
  */
-export function pick<T extends object, K extends keyof T>(
+export function pick<T extends Record<string, any>, K extends keyof T>(
   original: Runtype<T>,
   ...keys: K[]
 ): Runtype<RecordWithOptional<Pick<T, K>>> {
@@ -15,9 +15,9 @@ export function pick<T extends object, K extends keyof T>(
     throw new RuntypeUsageError(`expected a record runtype`)
   }
 
-  const newRecordFields: any = {}
+  const newRecordFields = {} as Pick<T, K>
 
-  keys.forEach((k: any) => {
+  keys.forEach((k) => {
     newRecordFields[k] = fields[k]
   })
 

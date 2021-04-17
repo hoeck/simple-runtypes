@@ -13,19 +13,21 @@ import { debugValue } from './runtypeError'
 import type { UndefinedSymbol } from './optional'
 
 // force types to collapse into "smooth" Record with optional keys
-type CollapsedRecord<T> = T extends infer U ? { [K in keyof U]: U[K] } : never
-type ExcludeUndefinedSymbol<T extends object> = {
+type CollapsedRecord<T extends Record<string, any>> = T extends infer U
+  ? { [K in keyof U]: U[K] }
+  : never
+type ExcludeUndefinedSymbol<T extends Record<string, any>> = {
   [K in keyof T]: Exclude<T[K], UndefinedSymbol>
 }
-type OptionalKeys<T extends object> = {
+type OptionalKeys<T extends Record<string, any>> = {
   [K in keyof T]: UndefinedSymbol extends T[K] ? K : never
 }
-export type RecordWithOptional<T extends object> = CollapsedRecord<
+export type RecordWithOptional<T extends Record<string, any>> = CollapsedRecord<
   Omit<T, OptionalKeys<T>[keyof T]> &
     Partial<ExcludeUndefinedSymbol<Pick<T, OptionalKeys<T>[keyof T]>>>
 >
 
-function isPureTypemap(typemap: object) {
+function isPureTypemap(typemap: Record<string, any>) {
   for (const k in typemap) {
     if (!Object.prototype.hasOwnProperty.call(typemap, k)) {
       continue
@@ -39,7 +41,7 @@ function isPureTypemap(typemap: object) {
   return true
 }
 
-function internalRecord<T extends object>(
+function internalRecord<T extends Record<string, any>>(
   typemap: { [K in keyof T]: Runtype<T[K]> },
   sloppy: boolean,
 ): Runtype<RecordWithOptional<T>> {
@@ -122,7 +124,7 @@ export function getRecordFields(
  *
  * Keeps you save from unwanted propertiers and evil __proto__ injections.
  */
-export function record<T extends object>(
+export function record<T extends Record<string, any>>(
   typemap: { [K in keyof T]: Runtype<T[K]> },
 ): Runtype<RecordWithOptional<T>> {
   return internalRecord(typemap, false)
@@ -136,7 +138,7 @@ export function record<T extends object>(
  *
  * Keeps you save from unwanted propertiers and evil __proto__ injections.
  */
-export function sloppyRecord<T extends object>(
+export function sloppyRecord<T extends Record<string, any>>(
   typemap: { [K in keyof T]: Runtype<T[K]> },
 ): Runtype<RecordWithOptional<T>> {
   return internalRecord(typemap, true)

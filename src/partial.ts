@@ -7,7 +7,7 @@ import { Runtype, RuntypeUsageError } from './runtype'
  *
  * This is the runtype counterpart to `Partial<T>`.
  */
-export function partial<T, K extends keyof T>(
+export function partial<T extends Record<string, any>, K extends keyof T>(
   original: Runtype<T>,
 ): Runtype<Partial<T>> {
   const fields = (original as any).fields
@@ -16,7 +16,7 @@ export function partial<T, K extends keyof T>(
     throw new RuntypeUsageError(`expected a record runtype`)
   }
 
-  const newRecordFields: any = {}
+  const newRecordFields: Record<string, any> = {}
 
   for (const k in fields) {
     if (Object.prototype.hasOwnProperty.call(fields, k)) {
@@ -26,5 +26,5 @@ export function partial<T, K extends keyof T>(
     }
   }
 
-  return record(newRecordFields)
+  return record(newRecordFields) as any
 }
