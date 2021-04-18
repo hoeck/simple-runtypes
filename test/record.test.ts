@@ -103,4 +103,13 @@ describe('record', () => {
       objectAttributes.map((a) => JSON.parse(`{"x": 1, "${a}": "x"}`)),
     )
   })
+
+  it('rejects records with missing keys', () => {
+    const runType = st.record({
+      a: st.integer(),
+      b: st.string(),
+    })
+
+    expect(() => runType({ b: 'foo' })).toThrow('missing keys in record ["a"]')
+  })
 })
