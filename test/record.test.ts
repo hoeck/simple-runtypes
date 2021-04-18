@@ -110,6 +110,6 @@ describe('record', () => {
       b: st.string(),
     })
 
-    expect(() => runType({ b: 'foo' })).toThrow('missing keys in record ["a"]')
+    expect(() => runType({ b: 'foo' })).toThrow('missing key in record: "a"')
   })
 })

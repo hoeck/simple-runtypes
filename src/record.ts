@@ -1,4 +1,3 @@
-import { objectRuntype } from './object'
 import {
   createFail,
   failSymbol,
@@ -32,34 +31,55 @@ function internalRecord<T extends object>(
   const isPure = isPureTypemap(typemap)
   const copyObject = sloppy || !isPure
 
-  const rt: Runtype<T> = internalRuntype((v, failOrThrow) => {
-    const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
+  // cache typemap in arrays for a faster loop
+  const typemapKeys = [...Object.keys(typemap)]
+  const typemapValues = [...Object.values(typemap)]
 
-    if (isFail(o)) {
-      return propagateFail(failOrThrow, o, v)
+  const rt = internalRuntype((v, failOrThrow) => {
+    // inlined object runtype for perf
+    if (typeof v !== 'object' || Array.isArray(v) || v === null) {
+      return createFail(failOrThrow, 'expected an object', v)
     }
+
+    const o: any = v
 
     // optimize allocations: only create a copy if any of the key runtypes
     // return a different object - otherwise return value as is
     const res = copyObject ? ({} as T) : (o as T)
 
-    for (const k in typemap) {
+    for (let i = 0; i < typemapKeys.length; i++) {
+      const k = typemapKeys[i]
+      const t = typemapValues[i] as InternalRuntype
+
       // nested types should always fail with explicit `Fail` so we can add additional data
-      const value = (typemap[k] as InternalRuntype)(o[k], failSymbol)
+      const value = t(o[k], failSymbol)
 
       if (isFail(value)) {
+        if (!(k in o)) {
+          // rt failed because o[k] was undefined bc. the key was missing from o
+          // use a more specific error message in this case
+          return createFail(
+            failOrThrow,
+            `missing key in record: ${debugValue(k)}`,
+          )
+        }
+
         return propagateFail(failOrThrow, value, v, k)
       }
 
       if (copyObject) {
-        res[k] = value
+        res[k as keyof T] = value
       }
     }
 
     if (!sloppy) {
-      const unknownKeys = Object.keys(o).filter(
-        (k) => !Object.prototype.hasOwnProperty.call(typemap, k),
-      )
+      const unknownKeys: string[] = []
+
+      for (const k in o) {
+        if (!Object.prototype.hasOwnProperty.call(typemap, k)) {
+          unknownKeys.push(o)
+        }
+      }
 
       if (unknownKeys.length) {
         return createFail(
