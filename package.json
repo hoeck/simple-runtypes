@@ -6,17 +6,18 @@
   "repository": "github:hoeck/simple-runtypes",
   "main": "dist/index.js",
   "module": "dist/simple-runtypes.esm.js",
-  "typings": "dist/index.d.ts",
+  "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
   "scripts": {
     "start": "tsdx watch",
-    "build": "tsdx build",
+    "build": "tsdx build --tsconfig tsconfig.build.json",
     "test": "tsdx test",
     "test:watch": "tsdx test --watchAll",
+    "test:types": "tsd",
     "lint": "tsdx lint",
-    "prepare": "tsdx build",
+    "prepare": "tsdx build  --tsconfig tsconfig.build.json",
     "build-readme": "ts-node  --compiler-options '{\"module\": \"CommonJS\"}' ./scripts/build-readme-references.ts && markdown-toc -i --maxdepth 4 README.md"
   },
   "peerDependencies": {},
@@ -55,6 +56,9 @@
       "@typescript-eslint/no-explicit-any": "off"
     }
   },
+  "tsd": {
+    "directory": "test-d"
+  },
   "devDependencies": {
     "@types/jest": "^25.2.1",
     "eslint-plugin-prettier": "^3.1.4",
@@ -62,6 +66,7 @@
     "prettier": "^2.0.2",
     "pretty-quick": "^2.0.1",
     "ts-node": "^9.0.0",
+    "tsd": "^0.14.0",
     "tsdx": "^0.13.1",
     "tslib": "^1.11.1",
     "typescript": "^3.8.3"
