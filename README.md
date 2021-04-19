@@ -80,21 +80,22 @@ st.getFormattedError(FAIL)
 ```
 
 Not throwing errors is way more efficient and less obscure.
-Throwing errors and catching them outside may be more convenient in some situations.
+Throwing errors and catching them outside is more convenient.
 
 ## Why?
 
 Why should I use this over the plethora of [other](https://github.com/moltar/typescript-runtime-type-benchmarks#packages-compared) runtype validation libraries available?
 
-1. Written in and for Typescript
-2. Strict by default (e.g. safe against proto injection attacks)
-3. Supports efficient discriminated unions
-4. Frontend-friendly (no `eval`, small [footprint](https://bundlephobia.com/result?p=simple-runtypes), no dependencies)
-6. Fast (of all non-eval based libs, only one is faster according to the [benchmark](https://github.com/moltar/typescript-runtime-type-benchmarks))
+1. Strict: by default safe against proto injection attacks and unwanted properties
+2. Fast: check the [benchmark](https://github.com/moltar/typescript-runtime-type-benchmarks)
+3. Friendly: no use of `eval`, a small [footprint](https://bundlephobia.com/result?p=simple-runtypes) and no dependencies
+4. Flexible: optionally modify the data while its being checked: trim strings, convert numbers, parse dates
 
 ## Benchmarks
 
-[@moltar](https://github.com/moltar) has done a great job comparing existing runtime typechecking libraries in [moltar/typescript-runtime-type-benchmarks](https://github.com/moltar/typescript-runtime-type-benchmarks)
+[@moltar](https://github.com/moltar) has done a great job comparing existing runtime typechecking libraries in [moltar/typescript-runtime-type-benchmarks](https://github.com/moltar/typescript-runtime-type-benchmarks).
+
+[@pongo](https://github.com/pongo) has benchmarked [simple-runtypes](https://github.com/hoeck/simple-runtypes) against [io-ts](https://github.com/gcanti/io-ts) in [pongo/benchmark-simple-runtypes](https://github.com/pongo/benchmark-simple-runtypes).
 
 ## Documentation
 
@@ -121,7 +122,7 @@ Check the factory functions documentation for more details.
 
 #### Strict Property Checks
 
-When using [`record`](src/record.ts#L97), any properties which are not defined in the runtype will cause the runtype to fail:
+When using [`record`](src/record.ts#L134), any properties which are not defined in the runtype will cause the runtype to fail:
 
 ```typescript
 const strict = st.record({name: st.string()})
@@ -139,7 +140,7 @@ strict({name: 'foo', other: 123})
 // => {name: foo, other: undefined}
 ```
 
-Use [`sloppyRecord`](src/record.ts#L111) to only validate known properties and remove everything else:
+Use [`sloppyRecord`](src/record.ts#L159) to only validate known properties and remove everything else:
 
 ```typescript
 const sloppy = st.sloppyRecord({name: st.string()})
@@ -148,11 +149,11 @@ strict({name: 'foo', other: 123, bar: []})
 // => {name: foo}
 ```
 
-Using any of [`record`](src/record.ts#L97) or [`sloppyRecord`](src/record.ts#L111) will keep you safe from any `__proto__` injection or overriding attempts.
+Using any of [`record`](src/record.ts#L134) or [`sloppyRecord`](src/record.ts#L159) will keep you safe from any `__proto__` injection or overriding attempts.
 
 #### Optional Properties
 
-Use the [`optional`](src/optional.ts#L11) runtype to create [optional properties](https://www.typescriptlang.org/docs/handbook/interfaces.html#optional-properties):
+Use the [`optional`](src/optional.ts#L18) runtype to create [optional properties](https://www.typescriptlang.org/docs/handbook/interfaces.html#optional-properties):
 
 ```typescript
 const squareConfigRuntype = st.record({
@@ -163,7 +164,7 @@ const squareConfigRuntype = st.record({
 
 #### Nesting
 
-Collection runtypes such as [`record`](src/record.ts#L97), [`array`](src/array.ts#L28), [`tuple`](src/tuple.ts#L42) take runtypes as their parameters:
+Collection runtypes such as [`record`](src/record.ts#L134), [`array`](src/array.ts#L28), [`tuple`](src/tuple.ts#L42) take runtypes as their parameters:
 
 ```typescript
 const nestedRuntype = st.record({
@@ -258,14 +259,13 @@ Objects and Array Runtypes
 
 - [`tuple`](src/tuple.ts#L42)
 - [`array`](src/array.ts#L28)
-- [`record`](src/record.ts#L97)
-- [`sloppyRecord`](src/record.ts#L111)
-- [`dictionary`](src/dictionary.ts#L81)
+- [`record`](src/record.ts#L134)
+  - [`optional`](src/optional.ts#L18)
+- [`sloppyRecord`](src/record.ts#L159)
+- [`dictionary`](src/dictionary.ts#L87)
 
 Combinators
 
-- [`optional`](src/optional.ts#L11)
-- [`nullable`](src/nullable.ts#L11)
 - [`union`](src/union.ts#L143)
 - [`intersection`](src/intersection.ts#L110)
 - [`omit`](src/omit.ts#L8)
@@ -273,18 +273,23 @@ Combinators
 - [`partial`](src/partial.ts#L10)
 - TODO: `get` - similar to Type[key]
 
+Shortcuts
+
+- [`nullOr`](src/nullOr.ts#L11)
+- [`undefinedOr`](src/undefinedOr.ts#L11)
+
 ### Roadmap / Todos
 
 - `size` - a meta-runtype that imposes a size limit on types, maybe via convert-to-json and .length on the value passed to it
 - rename [`stringLiteralUnion`](src/stringLiteralUnion.ts#L6) to `literals` or `literalUnion` and make it work
   on all types that [`literal`](src/literal.ts#L10) accepts
-- rename [`sloppyRecord`](src/record.ts#L111) to `record.sloppy` because I need
+- rename [`sloppyRecord`](src/record.ts#L159) to `record.sloppy` because I need
   the "sloppy"-concept for other runtypes too: e.g. `nullable.sloppy` - a
   `Runtype<T | null>` that also accepts `undefined` which is useful to slowly
   add new nullable fields to existing json database records
 - improve docs:
   - *preface*: what is a runtype and why is it useful
-  - *why*: explain or link to example that shows "strict by default" and "efficient discriminating unions"
+  - *why*: explain or link to example that shows "strict by default"
   - show that simple-runtypes is feature complete because it can
     1. express all typescript types
     2. is extendable with custom runtypes (add documentation)
