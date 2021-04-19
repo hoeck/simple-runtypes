@@ -9,7 +9,7 @@ const data: unknown = null
   const rt = st.record({
     a: st.number(),
     b: st.string(),
-    c: st.nullable(st.string()),
+    c: st.nullOr(st.string()),
   })
 
   // pick
@@ -27,7 +27,7 @@ const data: unknown = null
   const rt = st.record({
     a: st.number(),
     b: st.optional(st.string()),
-    c: st.optional(st.nullable(st.string())),
+    c: st.optional(st.nullOr(st.string())),
   })
 
   // pick

@@ -6,14 +6,14 @@ import {
 } from './runtype'
 
 /**
- * A type or null.
+ * Shortcut for a type or undefined.
  */
-export function nullable<A>(t: Runtype<A>): Runtype<null | A> {
+export function undefinedOr<A>(t: Runtype<A>): Runtype<A | undefined> {
   const isPure = isPureRuntype(t)
 
   return internalRuntype((v, failOrThrow) => {
-    if (v === null) {
-      return null
+    if (v === undefined) {
+      return undefined
     }
 
     return (t as InternalRuntype)(v, failOrThrow)

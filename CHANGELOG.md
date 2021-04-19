@@ -1,5 +1,14 @@
 ### master
 
+- rename `nullable` to `nullOr` to be consistent with `undefinedOr`
+  (because undefinable is not a good name)
+- add `undefinedOr` that works like the old `optional` type
+- real optional keys in `record`s:
+  Change `optional` to be only usable in `record`.
+  Using it will result in the key to be infered as optional:
+  `record({key: optional(number())})` results in `{key?: number}` as the type
+  (old behavior would infer `{key: undefined | number}`, you can get the old
+  behaviour by using `undefinedOr` instead of `optional`)
 - add `dictionary` and remove `numberIndex` and `stringIndex`
   Use `dictionary(stringAsInteger(), otherType)` to replace `numberIndex` and
   `dictionary(string(), otherType)` to replace `stringIndex`.

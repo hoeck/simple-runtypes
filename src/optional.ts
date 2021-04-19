@@ -2,8 +2,8 @@ import {
   InternalRuntype,
   internalRuntype,
   isPureRuntype,
-  Runtype,
   OptionalRuntype,
+  Runtype,
 } from './runtype'
 
 /**
