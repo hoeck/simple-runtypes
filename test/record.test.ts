@@ -39,13 +39,21 @@ describe('record', () => {
       b: st.optional(st.string()),
     })
 
-    let value: { a: number; b?: string }
+    expectAcceptValuesPure(runtype, [
+      { a: 0, b: 'foo' },
+      { a: 0, b: undefined },
+      { a: 0 },
+    ])
 
-    value = runtype({ a: 0, b: 'foo' })
-    expect(value).toEqual({ a: 0, b: 'foo' })
-
-    value = runtype({ a: 0, b: undefined })
-    expect(value).toEqual({ a: 0, b: undefined })
+    expectRejectValues(runtype, [
+      { b: 'foo' },
+      { b: undefined },
+      {},
+      { a: undefined },
+      undefined,
+      null,
+      0,
+    ])
   })
 
   it('accepts nested records', () => {

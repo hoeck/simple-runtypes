@@ -21,5 +21,6 @@ export function omit<T, K extends keyof T>(
     delete newRecordFields[k]
   })
 
-  return record(newRecordFields)
+  // TODO: keep 'sloppyness'
+  return record(newRecordFields) as Runtype<any>
 }

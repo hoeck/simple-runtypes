@@ -20,5 +20,6 @@ export function pick<T, K extends keyof T>(
     newRecordFields[k] = fields[k]
   })
 
-  return record(newRecordFields)
+  // TODO: keep 'sloppyness'
+  return record(newRecordFields) as Runtype<any>
 }

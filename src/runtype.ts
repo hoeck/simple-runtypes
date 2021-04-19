@@ -113,6 +113,23 @@ export interface Runtype<T> {
   (v: unknown): T
 }
 
+/**
+ * Special runtype for use in record definitions to mark optional keys.
+ */
+export interface OptionalRuntype<T> {
+  isOptionalRuntype: true
+  (v: unknown): T
+}
+
+export type Unpack<T> = T extends Runtype<infer U>
+  ? U
+  : T extends OptionalRuntype<infer V>
+  ? V
+  : never
+
+// force Typescript to boil down complex mapped types to a plain interface
+export type Collapse<T> = T extends infer U ? { [K in keyof U]: U[K] } : never
+
 const isPureRuntypeSymbol = Symbol('isPure')
 
 // The internal runtype is one that receives an additional flag that

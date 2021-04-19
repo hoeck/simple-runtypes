@@ -26,5 +26,6 @@ export function partial<T, K extends keyof T>(
     }
   }
 
-  return record(newRecordFields)
+  // TODO: keep 'sloppyness'
+  return record(newRecordFields) as Runtype<any>
 }

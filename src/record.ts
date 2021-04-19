@@ -7,6 +7,9 @@ import {
   isPureRuntype,
   propagateFail,
   Runtype,
+  OptionalRuntype,
+  Collapse,
+  Unpack,
 } from './runtype'
 import { debugValue } from './runtypeError'
 
@@ -24,10 +27,10 @@ function isPureTypemap(typemap: object) {
   return true
 }
 
-function internalRecord<T extends object>(
-  typemap: { [K in keyof T]: Runtype<T[K]> },
+function internalRecord(
+  typemap: { [key: string]: Runtype<any> | OptionalRuntype<any> },
   sloppy: boolean,
-): Runtype<T> {
+): Runtype<any> {
   const isPure = isPureTypemap(typemap)
   const copyObject = sloppy || !isPure
 
@@ -45,7 +48,7 @@ function internalRecord<T extends object>(
 
     // optimize allocations: only create a copy if any of the key runtypes
     // return a different object - otherwise return value as is
-    const res = copyObject ? ({} as T) : (o as T)
+    const res = copyObject ? {} : o
 
     for (let i = 0; i < typemapKeys.length; i++) {
       const k = typemapKeys[i]
@@ -68,7 +71,7 @@ function internalRecord<T extends object>(
       }
 
       if (copyObject) {
-        res[k as keyof T] = value
+        res[k] = value
       }
     }
 
@@ -128,10 +131,21 @@ export function getRecordFields(
  *
  * Keeps you save from unwanted propertiers and evil __proto__ injections.
  */
-export function record<T extends object>(
-  typemap: { [K in keyof T]: Runtype<T[K]> },
-): Runtype<T> {
-  return internalRecord(typemap, false)
+export function record<
+  T,
+  Typemap = { [K in keyof T]: Runtype<T[K]> | OptionalRuntype<T[K]> },
+  OptionalKeys extends keyof Typemap = {
+    [K in keyof Typemap]: Typemap[K] extends OptionalRuntype<any> ? K : never
+  }[keyof Typemap]
+>(
+  typemap: Typemap,
+): Runtype<
+  Collapse<
+    { [K in Exclude<keyof Typemap, OptionalKeys>]: Unpack<Typemap[K]> } &
+      { [K in OptionalKeys]?: Unpack<Typemap[K]> }
+  >
+> {
+  return internalRecord(typemap as any, false)
 }
 
 /**
@@ -142,8 +156,19 @@ export function record<T extends object>(
  *
  * Keeps you save from unwanted propertiers and evil __proto__ injections.
  */
-export function sloppyRecord<T extends object>(
-  typemap: { [K in keyof T]: Runtype<T[K]> },
-): Runtype<T> {
-  return internalRecord(typemap, true)
+export function sloppyRecord<
+  T,
+  Typemap = { [K in keyof T]: Runtype<T[K]> | OptionalRuntype<T[K]> },
+  OptionalKeys extends keyof Typemap = {
+    [K in keyof Typemap]: Typemap[K] extends OptionalRuntype<any> ? K : never
+  }[keyof Typemap]
+>(
+  typemap: Typemap,
+): Runtype<
+  Collapse<
+    { [K in Exclude<keyof Typemap, OptionalKeys>]: Unpack<Typemap[K]> } &
+      { [K in OptionalKeys]?: Unpack<Typemap[K]> }
+  >
+> {
+  return internalRecord(typemap as any, true)
 }
