@@ -1,4 +1,4 @@
-### master
+### 7.0.0
 
 - rename `nullable` to `nullOr` to be consistent with `undefinedOr`
   (because undefinable is not a good name)
