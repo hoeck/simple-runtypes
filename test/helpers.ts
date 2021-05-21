@@ -8,16 +8,18 @@ export * as st from '../src'
 export function expectAcceptValuesImpure<T>(
   rt: st.Runtype<T>,
   values: unknown[],
+  valuesAreTuples = false,
 ): void {
   values.forEach((v) => {
-    const result = st.use(rt, v)
+    const [vIn, vOut] = valuesAreTuples ? (v as [unknown, unknown]) : [v, v]
+    const result = st.use(rt, vIn)
 
-    expect(result).toEqual({ ok: true, result: v })
-    expect(result.ok && result.result).not.toBe(v)
+    expect(result).toEqual({ ok: true, result: vOut })
+    expect(result.ok && result.result).not.toBe(vIn)
 
     // check both, the error throwing api and the wrapped-result returning
     // one but only expect on the wrapped-result one bc its easier to report with jest
-    expect(() => rt(v)).not.toThrow()
+    expect(() => rt(vIn)).not.toThrow()
   })
 }
 
