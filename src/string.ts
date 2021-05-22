@@ -20,11 +20,13 @@ const stringRuntype = internalRuntype<string>((v, failOrThrow) => {
  *
  * Options:
  *
+ *   minLength .. reject strings that are shorter than that
  *   maxLength .. reject strings that are longer than that
  *   trim .. when true, remove leading and trailing spaces from the string
  *   match .. reject strings that do not match against provided RegExp
  */
 export function string(options?: {
+  minLength?: number
   maxLength?: number
   trim?: boolean
   match?: RegExp
@@ -33,7 +35,7 @@ export function string(options?: {
     return stringRuntype
   }
 
-  const { maxLength, trim, match } = options
+  const { minLength, maxLength, trim, match } = options
 
   const isPure = !trim // trim modifies the string
 
@@ -42,6 +44,14 @@ export function string(options?: {
 
     if (isFail(s)) {
       return propagateFail(failOrThrow, s, v)
+    }
+
+    if (minLength !== undefined && s.length < minLength) {
+      return createFail(
+        failOrThrow,
+        `expected the string length to be at least ${minLength}`,
+        v,
+      )
     }
 
     if (maxLength !== undefined && s.length > maxLength) {
