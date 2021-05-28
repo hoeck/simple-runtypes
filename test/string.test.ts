@@ -5,19 +5,45 @@ describe('string', () => {
     expectAcceptValuesPure(st.string(), ['asdf', '', '---', '\ufffe'])
   })
 
-  it('accepts / rejects strings with restrictions', () => {
-    expectAcceptValuesPure(st.string({ maxLength: 3 }), [
-      '',
-      'a',
-      ' a',
-      '---',
+  it('accepts / rejects strings with minLength restrictions', () => {
+    const rt = st.string({ minLength: 3 })
+
+    expectAcceptValuesPure(rt, [
+      '   ',
+      'äbc',
+      ' a b c d e f g ',
+      '---------------',
       '\ufffe  ',
     ])
 
     expectRejectValues(
-      st.string({ maxLength: 3 }),
+      rt,
+      ['', '  ', 'x', 'äb'],
+      'expected the string length to be at least 3',
+    )
+  })
+
+  it('accepts / rejects strings with maxLength restrictions', () => {
+    const rt = st.string({ maxLength: 3 })
+
+    expectAcceptValuesPure(rt, ['', 'a', ' a', '---', '\ufffe  '])
+
+    expectRejectValues(
+      rt,
       ['    ', 'xxxxx'],
       'expected the string length to not exceed 3',
+    )
+  })
+
+  it('accepts / rejects strings with minLength and maxLength restrictions', () => {
+    const rt = st.string({ minLength: 3, maxLength: 3 })
+
+    expectAcceptValuesPure(rt, ['   ', 'äbc', ' a ', '---', '\ufffe  ', '123'])
+
+    expectRejectValues(
+      rt,
+      ['', '  ', 'x', 'äb', 'äbcd', '1234'],
+      /expected the string length to (?:be at least|not exceed) 3/,
     )
   })
 
