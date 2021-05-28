@@ -36,6 +36,7 @@ export { nullOr } from './nullOr'
 export { undefinedOr } from './undefinedOr'
 export { optional } from './optional'
 export { stringAsInteger } from './stringAsInteger'
+export { json } from './json'
 
 // containers
 export { tuple } from './tuple'
