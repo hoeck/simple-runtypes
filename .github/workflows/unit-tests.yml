@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        node: [10, 12, 14]
+        node: [10, 12, 14, 16]
 
     name: ${{ matrix.os }} Node ${{ matrix.node }} cache
 
@@ -45,10 +45,8 @@ jobs:
             ${{ runner.os }}-node-${{ matrix.node }}-
             ${{ runner.os }}-node-
 
-      - run: yarn install --frozen-lockfile
-
-      - run: yarn run lint
-
-      - run: yarn run test:types
-
-      - run: yarn run test
+      - run: |
+          yarn install --frozen-lockfile
+          yarn run lint
+          yarn run test:types
+          yarn run test
