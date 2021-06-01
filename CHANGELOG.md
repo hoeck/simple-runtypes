@@ -1,3 +1,8 @@
+### 7.1.0
+
+- add `json` runtype
+- add `minLength` option to `string` runtype
+
 ### 7.0.0
 
 - rename `nullable` to `nullOr` to be consistent with `undefinedOr`
