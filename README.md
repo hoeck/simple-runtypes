@@ -115,7 +115,7 @@ interface Runtype<T> {
 ```
 
 Runtypes are constructed by calling factory functions.
-For instance, [`string`](src/string.ts#L27) creates and retuns a string runtype.
+For instance, [`string`](src/string.ts#L28) creates and retuns a string runtype.
 Check the factory functions documentation for more details.
 
 ### Usage Examples
@@ -240,7 +240,7 @@ bigIntRuntype("2.2") // => error: "expected string to match ..."
 Basic runtypes that match TS / Javascript types:
 
 - [`number`](src/number.ts#L13)
-- [`string`](src/string.ts#L27)
+- [`string`](src/string.ts#L28)
 - [`boolean`](src/boolean.ts#L14)
 - [`null`](src/null.ts#6)
 - [`undefined`](src/undefined.ts#7)
@@ -254,6 +254,7 @@ Meta runtypes
 - [`ignore`](src/ignore.ts#L6)
 - [`unknown`](src/unknown.ts#L6)
 - [`any`](src/any.ts#L6)
+- [`json`](src/json.ts#L27)
 
 Objects and Array Runtypes
 
