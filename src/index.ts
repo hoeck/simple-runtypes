@@ -12,6 +12,7 @@ export {
   RuntypeUsageError,
 } from './runtype'
 export { createError, runtype, use, ValidationResult } from './custom'
+export { toSchema } from './toSchema'
 
 // basic types
 export { any } from './any'

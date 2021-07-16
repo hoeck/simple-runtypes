@@ -9,15 +9,31 @@ import {
   Runtype,
   RuntypeUsageError,
 } from './runtype'
+import type { Meta as RuntypeMeta } from './runtypeMeta'
+import type { Meta as UnionMeta } from './union'
+
+export type Meta = Readonly<{
+  type: 'intersection'
+  isPure: boolean
+  aRuntype: Runtype<any>
+  bRuntype: Runtype<any>
+}>
 
 // An intersection of two record runtypes
 function recordIntersection2<A, B>(
   recordA: Runtype<A>,
   recordB: Runtype<B>,
 ): Runtype<A & B> {
-  const fields: { [key: string]: Runtype<any> } = {}
-  const a = (recordA as any).fields
-  const b = (recordB as any).fields
+  const fields: Record<string, Runtype<A & B>> = {}
+  const aMeta: RuntypeMeta = (recordA as any).meta
+  const bMeta: RuntypeMeta = (recordB as any).meta
+
+  if (aMeta.type !== 'record' || bMeta.type !== 'record') {
+    throw new Error()
+  }
+
+  const a = aMeta.fields
+  const b = bMeta.fields
 
   for (const k in { ...a, ...b }) {
     if (a[k] && b[k]) {
@@ -40,7 +56,8 @@ function unionIntersection2<A, B>(
   u: Runtype<A>,
   b: Runtype<B>,
 ): Runtype<A & B> {
-  const unionRuntypes: Runtype<any>[] = (u as any).unions
+  const meta: UnionMeta = (u as any).meta
+  const unionRuntypes = meta.unions
 
   if (
     !unionRuntypes ||
@@ -66,20 +83,36 @@ function unionIntersection2<A, B>(
  */
 function intersection2<A, B>(a: Runtype<A>, b: Runtype<B>): Runtype<A & B>
 function intersection2(a: Runtype<any>, b: Runtype<any>): Runtype<any> {
-  if ('fields' in a && 'fields' in b) {
+  const aMeta: RuntypeMeta = (a as any).meta
+  const bMeta: RuntypeMeta = (b as any).meta
+
+  if (aMeta.type === 'record' && bMeta.type === 'record') {
     return recordIntersection2(a, b)
-  } else if ('unions' in a && 'fields' in b) {
+  } else if (
+    aMeta.type === 'union' &&
+    aMeta.hasCommonKey &&
+    bMeta.type === 'record'
+  ) {
     return unionIntersection2(a, b)
-  } else if ('unions' in b && 'fields' in a) {
+  } else if (
+    bMeta.type === 'union' &&
+    bMeta.hasCommonKey &&
+    aMeta.type === 'record'
+  ) {
     return unionIntersection2(b, a)
-  } else if ('fields' in a || 'fields' in b) {
+  } else if (aMeta.type === 'record' || bMeta.type === 'record') {
     // Does such an intersection (e.g. string | {a: number} even make sense?
     // And how would you implement it?
     throw new RuntypeUsageError(
       'intersection2: cannot intersect a base type with a record',
     )
   } else {
-    const isPure = isPureRuntype(a) && isPureRuntype(b)
+    const meta: Meta = {
+      type: 'intersection',
+      isPure: isPureRuntype(a) && isPureRuntype(b),
+      aRuntype: a,
+      bRuntype: b,
+    }
 
     return internalRuntype((v, failOrThrow) => {
       const valFromA = (a as InternalRuntype)(v, failOrThrow)
@@ -94,8 +127,19 @@ function intersection2(a: Runtype<any>, b: Runtype<any>): Runtype<any> {
       }
 
       return valFromB // second runtype arg is preferred
-    }, isPure)
+    }, meta)
   }
+}
+
+export function toSchema(
+  runtype: Runtype<any>,
+  runtypeToSchema: (runtype: Runtype<any>) => string,
+): string {
+  const meta: Meta = (runtype as any).meta
+  const aSchema = runtypeToSchema(meta.aRuntype)
+  const bSchema = runtypeToSchema(meta.bRuntype)
+
+  return `${aSchema} & ${bSchema}`
 }
 
 /**

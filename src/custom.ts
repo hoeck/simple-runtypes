@@ -16,6 +16,10 @@ export function createError(msg: string): Fail {
   return createFail(failSymbol, msg)
 }
 
+export type Meta = Readonly<{ type: 'custom'; isPure: false }>
+
+const meta: Meta = { type: 'custom', isPure: false }
+
 /**
  * Construct a custom runtype from a validation function.
  */
@@ -28,7 +32,7 @@ export function runtype<T>(fn: (v: unknown) => T | Fail): Runtype<T> {
     }
 
     return res
-  })
+  }, meta)
 }
 
 /**
@@ -61,4 +65,8 @@ export function use<T>(r: Runtype<T>, v: unknown): ValidationResult<T> {
   }
 
   return { ok: true, result }
+}
+
+export function toSchema(): string {
+  return 'any'
 }

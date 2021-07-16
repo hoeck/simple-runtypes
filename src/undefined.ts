@@ -1,5 +1,8 @@
 import { createFail, internalRuntype, Runtype } from './runtype'
 
+export type Meta = Readonly<{ type: 'undefined'; isPure: true }>
+const meta: Meta = { type: 'undefined', isPure: true }
+
 /**
  * undefined
  */
@@ -11,7 +14,11 @@ function undefinedRuntype(): Runtype<undefined> {
     }
 
     return v
-  }, true)
+  }, meta)
 }
 
 export { undefinedRuntype as undefined }
+
+export function toSchema(): string {
+  return 'never'
+}

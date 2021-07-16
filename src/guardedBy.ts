@@ -1,5 +1,9 @@
 import { createFail, internalRuntype, Runtype } from './runtype'
 
+export type Meta = Readonly<{ type: 'guardedBy'; isPure: true }>
+
+const meta: Meta = { type: 'guardedBy', isPure: true }
+
 /**
  * A runtype based on a type guard
  */
@@ -10,5 +14,9 @@ export function guardedBy<F>(typeGuard: (v: unknown) => v is F): Runtype<F> {
     }
 
     return v
-  }, true)
+  }, meta)
+}
+
+export function toSchema(): string {
+  return 'any'
 }

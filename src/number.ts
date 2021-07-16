@@ -1,5 +1,8 @@
 import { createFail, internalRuntype, Runtype } from './runtype'
 
+export type Meta = Readonly<{ type: 'number'; isPure: true }>
+const meta: Meta = { type: 'number', isPure: true }
+
 /**
  * A number. By default reject NaN and Infinity values.
  *
@@ -40,5 +43,9 @@ export function number(options?: {
     }
 
     return v
-  }, true)
+  }, meta)
+}
+
+export function toSchema(): string {
+  return 'number'
 }

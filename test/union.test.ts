@@ -36,10 +36,10 @@ describe('union', () => {
   })
 })
 
-describe('discriminatedUnion', () => {
+describe('discriminatedUnion with different tag types', () => {
   enum Tag {
     A = 'a_tag',
-    B = 'b_tag',
+    B = 2,
     C = 'c_tag',
   }
 
@@ -85,6 +85,7 @@ describe('discriminatedUnion', () => {
     expectAcceptValuesPure(runtypeUnion, [
       { tag: 'a_tag', id: 123 },
       { tag: Tag.B, name: 'asd' },
+      { tag: 2, name: 'abc' },
       { tag: 'c_tag', value: { a: 123 } },
       { tag: 'c_tag' },
       { tag: 'c_tag', value: undefined },
@@ -97,6 +98,7 @@ describe('discriminatedUnion', () => {
     expectRejectValues(runtypeUnion, [
       { tag: 'x_tag', id: 123 },
       { tag: 'b_tag', name: [] },
+      { tag: 3, name: 'abc' },
       99,
       NaN,
       undefined,

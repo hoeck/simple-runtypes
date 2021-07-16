@@ -12,6 +12,13 @@ import {
   Unpack,
 } from './runtype'
 import { debugValue } from './runtypeError'
+import type { Meta as RuntypeMeta } from './runtypeMeta'
+
+export type Meta = Readonly<{
+  type: 'record'
+  isPure: boolean
+  fields: { [key: string]: Runtype<any> }
+}>
 
 function isPureTypemap(typemap: object) {
   for (const k in typemap) {
@@ -31,14 +38,22 @@ function internalRecord(
   typemap: { [key: string]: Runtype<any> | OptionalRuntype<any> },
   sloppy: boolean,
 ): Runtype<any> {
-  const isPure = isPureTypemap(typemap)
-  const copyObject = sloppy || !isPure
+  // fields metadata to implement combinators like (discriminated) unions,
+  // pick, omit and intersection
+  const fields: Meta['fields'] = {}
+
+  for (const k in typemap) {
+    fields[k] = typemap[k]
+  }
+
+  const meta: Meta = { type: 'record', isPure: isPureTypemap(typemap), fields }
+  const copyObject = sloppy || !meta.isPure
 
   // cache typemap in arrays for a faster loop
   const typemapKeys = [...Object.keys(typemap)]
   const typemapValues = [...Object.values(typemap)]
 
-  const rt = internalRuntype((v, failOrThrow) => {
+  return internalRuntype((v, failOrThrow) => {
     // inlined object runtype for perf
     if (typeof v !== 'object' || Array.isArray(v) || v === null) {
       return createFail(failOrThrow, 'expected an object', v)
@@ -94,32 +109,17 @@ function internalRecord(
     }
 
     return res
-  }, isPure)
-
-  // fields metadata to implement combinators like (discriminated) unions,
-  // pick, omit and intersection
-  const fields: { [key: string]: any } = {}
-
-  for (const k in typemap) {
-    fields[k] = typemap[k]
-  }
-
-  // eslint-disable-next-line no-extra-semi
-  ;(rt as any).fields = fields
-
-  return rt
+  }, meta)
 }
 
-export function getRecordFields(
-  r: Runtype<any>,
-): { [key: string]: Runtype<any> } | undefined {
-  const anyRt: any = r
+export function getRecordFields(r: Runtype<any>): Meta['fields'] | undefined {
+  const meta: Meta = (r as any).meta
 
-  if (!anyRt.fields) {
+  if (meta.type !== 'record') {
     return
   }
 
-  return anyRt.fields
+  return meta.fields
 }
 
 /**
@@ -171,4 +171,21 @@ export function sloppyRecord<
   >
 > {
   return internalRecord(typemap as any, true)
+}
+
+export function toSchema(
+  runtype: Runtype<any>,
+  runtypeToSchema: (runtype: Runtype<any>) => string,
+): string {
+  const meta: Meta = (runtype as any).meta
+
+  return `{\n  ${Object.entries(meta.fields)
+    .map(([k, v]) => {
+      const vMeta: RuntypeMeta = (v as any).meta
+      const isOptional = vMeta.type === 'optional'
+      const optionalSymbol = isOptional ? '?' : ''
+
+      return `${k}${optionalSymbol}: ${runtypeToSchema(v)};`
+    })
+    .join('\n  ')}\n}`
 }

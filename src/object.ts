@@ -1,5 +1,8 @@
 import { createFail, internalRuntype, Runtype } from './runtype'
 
+export type Meta = Readonly<{ type: 'object'; isPure: true }>
+const meta: Meta = { type: 'object', isPure: true }
+
 // cached object runtype
 export const objectRuntype = internalRuntype<object>((v, failOrThrow) => {
   if (typeof v === 'object' && !Array.isArray(v) && v !== null) {
@@ -7,11 +10,15 @@ export const objectRuntype = internalRuntype<object>((v, failOrThrow) => {
   }
 
   return createFail(failOrThrow, 'expected an object', v)
-}, true)
+}, meta)
 
 /**
  * An object that is not an array.
  */
 export function object(): Runtype<object> {
   return objectRuntype
+}
+
+export function toSchema(): string {
+  return '{}'
 }

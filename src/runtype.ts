@@ -1,3 +1,4 @@
+import type { Meta } from './runtypeMeta'
 /**
  * Thrown if the input does not match the runtype.
  *
@@ -130,8 +131,6 @@ export type Unpack<T> = T extends Runtype<infer U>
 // force Typescript to boil down complex mapped types to a plain interface
 export type Collapse<T> = T extends infer U ? { [K in keyof U]: U[K] } : never
 
-const isPureRuntypeSymbol = Symbol('isPure')
-
 // The internal runtype is one that receives an additional flag that
 // determines whether the runtype should throw a RuntypeError or whether it
 // should return a Fail up to the caller.
@@ -145,17 +144,25 @@ const isPureRuntypeSymbol = Symbol('isPure')
 // value (checked with `isPureRuntype`
 export function internalRuntype<T>(
   fn: (v: unknown, failOrThrow?: typeof failSymbol) => T,
-  isPure?: boolean,
+  meta: Meta,
 ): Runtype<T> {
-  if (isPure === true) {
-    return Object.assign(fn, { isPure: isPureRuntypeSymbol })
-  } else if (isPure === undefined || isPure === false) {
-    return fn
-  } else {
+  if (!meta) {
+    throw new RuntypeUsageError('expected meta to be "Meta" object')
+  }
+
+  if (!meta.type || typeof meta.type !== 'string') {
     throw new RuntypeUsageError(
-      'expected "isPure" or undefined as the second argument',
+      'expected meta key "type" to be a non empty string',
     )
   }
+
+  if (typeof meta.isPure !== 'boolean') {
+    throw new RuntypeUsageError(
+      'expected meta key "isPure" to be true or false',
+    )
+  }
+
+  return Object.assign(fn, { meta })
 }
 
 /**
@@ -165,7 +172,9 @@ export function internalRuntype<T>(
  * This is used to get rid of redundant object copying
  */
 export function isPureRuntype(fn: Runtype<any>): boolean {
-  return !!(fn as any).isPure
+  const meta: Meta = (fn as any).meta
+
+  return meta.isPure
 }
 
 export type InternalRuntype = (

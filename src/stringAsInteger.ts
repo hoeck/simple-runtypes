@@ -9,42 +9,43 @@ import {
   Runtype,
 } from './runtype'
 
-export const stringAsIntegerRuntype = internalRuntype<number>(
-  (v, failOrThrow) => {
-    if (typeof v === 'string') {
-      const parsedNumber = parseInt(v, 10)
-      const n: number = (integerRuntype as InternalRuntype)(
-        parsedNumber,
-        failSymbol,
-      )
+export type Meta = Readonly<{ type: 'stringAsInteger'; isPure: false }>
+const meta: Meta = { type: 'stringAsInteger', isPure: false }
 
-      if (isFail(n)) {
-        return propagateFail(failOrThrow, n, v)
-      }
+const stringAsIntegerRuntype = internalRuntype<number>((v, failOrThrow) => {
+  if (typeof v === 'string') {
+    const parsedNumber = parseInt(v, 10)
+    const n: number = (integerRuntype as InternalRuntype)(
+      parsedNumber,
+      failSymbol,
+    )
 
-      // ensure that value did only contain that integer, nothing else
-      // but also make '+1' === '1' and '-0' === '0'
-      const vStringSansLeadingPlus =
-        v === '-0' ? '0' : v[0] === '+' ? v.slice(1) : v
-
-      if (n.toString() !== vStringSansLeadingPlus) {
-        return createFail(
-          failOrThrow,
-          'expected string to contain only the safe integer, not additional characters, whitespace or leading zeros',
-          v,
-        )
-      }
-
-      return n
+    if (isFail(n)) {
+      return propagateFail(failOrThrow, n, v)
     }
 
-    return createFail(
-      failOrThrow,
-      'expected a string that contains a safe integer',
-      v,
-    )
-  },
-)
+    // ensure that value did only contain that integer, nothing else
+    // but also make '+1' === '1' and '-0' === '0'
+    const vStringSansLeadingPlus =
+      v === '-0' ? '0' : v[0] === '+' ? v.slice(1) : v
+
+    if (n.toString() !== vStringSansLeadingPlus) {
+      return createFail(
+        failOrThrow,
+        'expected string to contain only the safe integer, not additional characters, whitespace or leading zeros',
+        v,
+      )
+    }
+
+    return n
+  }
+
+  return createFail(
+    failOrThrow,
+    'expected a string that contains a safe integer',
+    v,
+  )
+}, meta)
 
 /**
  * A string that is parsed as an integer.
@@ -85,5 +86,9 @@ export function stringAsInteger(options?: {
     }
 
     return n
-  })
+  }, meta)
+}
+
+export function toSchema(): string {
+  return 'string'
 }

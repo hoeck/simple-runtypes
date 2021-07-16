@@ -12,7 +12,15 @@ import {
   Runtype,
   RuntypeUsageError,
 } from './runtype'
+import type { Meta as RuntypeMeta } from './runtypeMeta'
 import { debugValue } from './runtypeError'
+
+export type Meta = Readonly<{
+  type: 'union'
+  isPure: boolean
+  unions: Runtype<any>[]
+  hasCommonKey: boolean
+}>
 
 // A tagged union with type discriminant 'key'.
 // Runtypes must be created with `record(...)` which contains type metadata to
@@ -28,8 +36,22 @@ function internalDiscriminatedUnion(
 
   // build an index for fast runtype lookups by literal
   runtypes.forEach((t: any) => {
-    const rt = t.fields[key]
-    const tagValue = rt.literal
+    const tMeta: RuntypeMeta = t.meta
+
+    if (tMeta.type !== 'record') {
+      throw new Error()
+    }
+
+    const rt: any = tMeta.fields[key]
+    const rtMeta: RuntypeMeta = rt.meta
+
+    if (rtMeta.type !== 'literal') {
+      throw new RuntypeUsageError(
+        `broken record type definition, ${t}[${key}] is not a literal`,
+      )
+    }
+
+    const tagValue = rtMeta.literal
 
     if (tagValue === undefined) {
       throw new RuntypeUsageError(
@@ -50,9 +72,15 @@ function internalDiscriminatedUnion(
     typeMap.set(tagValue, t)
   })
 
-  const isPure = runtypes.every((t) => isPureRuntype(t))
+  const meta: Meta = {
+    type: 'union',
+    isPure: runtypes.every((t) => isPureRuntype(t)),
+    // keep the union runtypes around to implement combinators that need to distribute across unions like intersection
+    unions: runtypes,
+    hasCommonKey: true,
+  }
 
-  const resultingRuntype = internalRuntype((v, failOrThrow) => {
+  return internalRuntype((v, failOrThrow) => {
     const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(o)) {
@@ -73,12 +101,7 @@ function internalDiscriminatedUnion(
     }
 
     return (rt as InternalRuntype)(v, failOrThrow)
-  }, isPure)
-
-  // keep the union runtypes around to implement combinators that need to distribute across unions like intersection
-  ;(resultingRuntype as any).unions = runtypes
-
-  return resultingRuntype
+  }, meta)
 }
 
 // given a list of runtypes, return the name of the key that acts as the
@@ -87,7 +110,7 @@ function internalDiscriminatedUnion(
 function findDiscriminatingUnionKey(
   runtypes: Runtype<any>[],
 ): string | undefined {
-  const commonKeys = new Map<string, Set<string>>()
+  const commonKeys = new Map<string, Set<string | number | boolean>>()
 
   for (let i = 0; i < runtypes.length; i++) {
     const r = runtypes[i]
@@ -99,10 +122,9 @@ function findDiscriminatingUnionKey(
     }
 
     for (const f in fields) {
-      const fieldRuntype = fields[f]
-      const l = (fieldRuntype as any).literal
+      const meta: RuntypeMeta = (fields[f] as any).meta
 
-      if (l !== undefined) {
+      if (meta.type === 'literal') {
         // found a literal value, add it to the field
         // if we get a distinct literalruntype, we can use the optimized
         // index-accessed internalDiscriminatedUnion runtype
@@ -110,7 +132,7 @@ function findDiscriminatingUnionKey(
           commonKeys.set(f, new Set())
         }
 
-        commonKeys.get(f)?.add(l)
+        commonKeys.get(f)?.add(meta.literal)
       }
     }
   }
@@ -155,7 +177,12 @@ export function union<V extends Runtype<any>[]>(
     return internalDiscriminatedUnion(commonKey, runtypes)
   }
 
-  const isPure = runtypes.every((t) => isPureRuntype(t))
+  const meta: Meta = {
+    type: 'union',
+    isPure: runtypes.every((t) => isPureRuntype(t)),
+    unions: runtypes,
+    hasCommonKey: false,
+  }
 
   // simple union validation: try all runtypes and use the first one that
   // doesn't fail
@@ -173,5 +200,14 @@ export function union<V extends Runtype<any>[]>(
     }
 
     return propagateFail(failOrThrow, lastFail as any, v)
-  }, isPure)
+  }, meta)
+}
+
+export function toSchema(
+  runtype: Runtype<any>,
+  runtypeToSchema: (runtype: Runtype<any>) => string,
+): string {
+  const meta: Meta = (runtype as any).meta
+
+  return meta.unions.map((t) => runtypeToSchema(t)).join(' | ')
 }

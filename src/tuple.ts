@@ -11,6 +11,12 @@ import {
 
 import { arrayRuntype } from './array'
 
+export type Meta = Readonly<{
+  type: 'tuple'
+  isPure: boolean
+  memberTypes: Runtype<any>[]
+}>
+
 // TODO: find a simple (not type-computationally expensive) generic tuple definition.
 // atm the one that comes closest would be: https://github.com/Microsoft/TypeScript/issues/13298#issuecomment-675386981
 // For now, keep the tuple definition simple as I don't see a usecase for big
@@ -40,7 +46,11 @@ export function tuple<A, B, C, D, E>(
   e: Runtype<E>,
 ): Runtype<[A, B, C, D, E]>
 export function tuple(...types: Runtype<any>[]): Runtype<any> {
-  const isPure = types.every((t) => isPureRuntype(t))
+  const meta: Meta = {
+    type: 'tuple',
+    isPure: types.every((t) => isPureRuntype(t)),
+    memberTypes: types,
+  }
 
   return internalRuntype<any>((v, failOrThrow) => {
     const a = (arrayRuntype as InternalRuntype)(v, failOrThrow)
@@ -57,7 +67,7 @@ export function tuple(...types: Runtype<any>[]): Runtype<any> {
       )
     }
 
-    const res: any[] = isPure ? a : new Array(a.length)
+    const res: any[] = meta.isPure ? a : new Array(a.length)
 
     for (let i = 0; i < types.length; i++) {
       const item = (types[i] as InternalRuntype)(a[i], failSymbol)
@@ -66,11 +76,20 @@ export function tuple(...types: Runtype<any>[]): Runtype<any> {
         return propagateFail(failOrThrow, item, v, i)
       }
 
-      if (!isPure) {
+      if (!meta.isPure) {
         res[i] = item
       }
     }
 
     return res
-  }, isPure)
+  }, meta)
+}
+
+export function toSchema(
+  runtype: Runtype<any>,
+  runtypeToSchema: (runtype: Runtype<any>) => string,
+): string {
+  const meta: Meta = (runtype as any).meta
+
+  return `[${meta.memberTypes.map((rt) => runtypeToSchema(rt)).join(', ')}]`
 }

@@ -5,11 +5,13 @@ import {
   Runtype,
 } from './runtype'
 
+export type Meta = Readonly<{ type: 'undefinedOr'; isPure: boolean }>
+
 /**
  * Shortcut for a type or undefined.
  */
 export function undefinedOr<A>(t: Runtype<A>): Runtype<A | undefined> {
-  const isPure = isPureRuntype(t)
+  const meta: Meta = { type: 'undefinedOr', isPure: isPureRuntype(t) }
 
   return internalRuntype((v, failOrThrow) => {
     if (v === undefined) {
@@ -17,5 +19,9 @@ export function undefinedOr<A>(t: Runtype<A>): Runtype<A | undefined> {
     }
 
     return (t as InternalRuntype)(v, failOrThrow)
-  }, isPure)
+  }, meta)
+}
+
+export function toSchema(): string {
+  return 'never'
 }

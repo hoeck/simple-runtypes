@@ -9,11 +9,21 @@ import {
 import { debugValue } from './runtypeError'
 import type { Runtype, InternalRuntype, Fail } from './runtype'
 
+export type Meta = Readonly<{
+  type: 'dictionary'
+  isPure: boolean
+  valueRuntype: Runtype<any>
+}>
+
 function dictionaryRuntype<T extends string, U>(
   keyRuntype: Runtype<T>,
   valueRuntype: Runtype<U>,
 ) {
-  const isPure = isPureRuntype(keyRuntype) && isPureRuntype(valueRuntype)
+  const meta: Meta = {
+    type: 'dictionary',
+    isPure: isPureRuntype(keyRuntype) && isPureRuntype(valueRuntype),
+    valueRuntype,
+  }
 
   return internalRuntype<Record<T, U>>((v, failOrThrow) => {
     const o: object | Fail = (objectRuntype as InternalRuntype)(v, failOrThrow)
@@ -34,7 +44,7 @@ function dictionaryRuntype<T extends string, U>(
 
     // optimize allocations: only create a copy if any of the key runtypes
     // return a different object - otherwise return value as is
-    const res = (isPure ? o : {}) as { [key: string]: U }
+    const res = (meta.isPure ? o : {}) as { [key: string]: U }
 
     for (const key in o) {
       if (!Object.prototype.hasOwnProperty.call(o, key)) {
@@ -69,13 +79,13 @@ function dictionaryRuntype<T extends string, U>(
         return propagateFail(failOrThrow, valueOrFail, v)
       }
 
-      if (!isPure) {
+      if (!meta.isPure) {
         res[keyOrFail] = valueOrFail
       }
     }
 
     return res
-  }, isPure)
+  }, meta)
 }
 
 /**
@@ -89,4 +99,14 @@ export function dictionary<T extends Runtype<any>, U extends Runtype<any>>(
   valueRuntype: U,
 ): Runtype<Record<ReturnType<T>, ReturnType<U>>> {
   return dictionaryRuntype(keyRuntype, valueRuntype)
+}
+
+export function toSchema(
+  runtype: Runtype<Record<ReturnType<any>, ReturnType<any>>>,
+  runtypeToSchema: (runtype: Runtype<any>) => string,
+): string {
+  const meta: Meta = (runtype as any).meta
+  const valueSchema = runtypeToSchema(meta.valueRuntype)
+
+  return `Record<string, ${valueSchema}>`
 }

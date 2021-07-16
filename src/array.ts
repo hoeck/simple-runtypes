@@ -8,6 +8,19 @@ import {
   propagateFail,
   Runtype,
 } from './runtype'
+import { any as anyRt } from './any'
+
+export type Meta = Readonly<{
+  type: 'array'
+  isPure: boolean
+  membersRuntype: Runtype<any>
+}>
+
+const anyArrayMeta: Meta = {
+  type: 'array',
+  isPure: true,
+  membersRuntype: anyRt(),
+}
 
 export const arrayRuntype = internalRuntype<unknown[]>((v, failOrThrow) => {
   if (Array.isArray(v)) {
@@ -15,7 +28,7 @@ export const arrayRuntype = internalRuntype<unknown[]>((v, failOrThrow) => {
   }
 
   return createFail(failOrThrow, `expected an Array`, v)
-}, true)
+}, anyArrayMeta)
 
 /**
  * An array of a given type.
@@ -31,7 +44,11 @@ export function array<A>(
 ): Runtype<A[]> {
   const { maxLength, minLength } = options || {}
 
-  const isPure = isPureRuntype(a)
+  const meta: Meta = {
+    type: 'array',
+    isPure: isPureRuntype(a),
+    membersRuntype: a,
+  }
 
   return internalRuntype<any>((v, failOrThrow) => {
     const arrayValue = (arrayRuntype as InternalRuntype)(v, failOrThrow)
@@ -57,7 +74,7 @@ export function array<A>(
     }
 
     // copy the unknown array in case the item runtype is not pure (we do not mutate anything in place)
-    const res: A[] = isPure ? arrayValue : new Array(arrayValue.length)
+    const res: A[] = meta.isPure ? arrayValue : new Array(arrayValue.length)
 
     for (let i = 0; i < arrayValue.length; i++) {
       const item = (a as InternalRuntype)(arrayValue[i], failSymbol)
@@ -66,11 +83,21 @@ export function array<A>(
         return propagateFail(failOrThrow, item, v, i)
       }
 
-      if (!isPure) {
+      if (!meta.isPure) {
         res[i] = item
       }
     }
 
     return res
-  }, isPure)
+  }, meta)
+}
+
+export function toSchema(
+  runtype: Runtype<any[]>,
+  runtypeToSchema: (runtype: Runtype<any>) => string,
+): string {
+  const meta: Meta = (runtype as any).meta
+  const memberSchema = runtypeToSchema(meta.membersRuntype)
+
+  return `${memberSchema}[]`
 }

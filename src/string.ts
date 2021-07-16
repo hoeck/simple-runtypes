@@ -7,13 +7,23 @@ import {
   Runtype,
 } from './runtype'
 
+export type Meta = Readonly<{
+  type: 'string'
+  isPure: boolean
+}>
+
+const pureMeta: Meta = {
+  type: 'string',
+  isPure: true,
+}
+
 const stringRuntype = internalRuntype<string>((v, failOrThrow) => {
   if (typeof v === 'string') {
     return v
   }
 
   return createFail(failOrThrow, 'expected a string', v)
-}, true)
+}, pureMeta)
 
 /**
  * A string.
@@ -37,7 +47,10 @@ export function string(options?: {
 
   const { minLength, maxLength, trim, match } = options
 
-  const isPure = !trim // trim modifies the string
+  const meta: Meta = {
+    type: 'string',
+    isPure: !trim, // trim modifies the string
+  }
 
   return internalRuntype((v, failOrThrow) => {
     const s: string = (stringRuntype as InternalRuntype)(v, failOrThrow)
@@ -67,5 +80,9 @@ export function string(options?: {
     }
 
     return trim ? s.trim() : s
-  }, isPure)
+  }, meta)
+}
+
+export function toSchema(): string {
+  return 'string'
 }

@@ -8,7 +8,11 @@ import {
 } from './runtype'
 import { use } from './custom'
 
-export const jsonRuntype = internalRuntype<unknown>((v, failOrThrow) => {
+export type Meta = Readonly<{ type: 'json'; isPure: true }>
+
+const meta: Meta = { type: 'json', isPure: true }
+
+const jsonRuntype = internalRuntype<unknown>((v, failOrThrow) => {
   if (!(typeof v === 'string')) {
     return createFail(failOrThrow, 'expected a json string', v)
   }
@@ -19,7 +23,7 @@ export const jsonRuntype = internalRuntype<unknown>((v, failOrThrow) => {
   } catch (err) {
     return createFail(failOrThrow, 'expected a json string: ' + String(err), v)
   }
-}, true)
+}, meta)
 
 /**
  * A String that is valid json
@@ -39,5 +43,9 @@ export function json<T>(rt: Runtype<any>): Runtype<T> {
     }
 
     return validationResult.result
-  }, true)
+  }, meta)
+}
+
+export function toSchema(): string {
+  return 'string'
 }

@@ -7,13 +7,17 @@ import {
   Runtype,
 } from './runtype'
 
+export type Meta = Readonly<{ type: 'integer'; isPure: true }>
+
+const meta: Meta = { type: 'integer', isPure: true }
+
 export const integerRuntype = internalRuntype<number>((v, failOrThrow) => {
   if (typeof v === 'number' && Number.isSafeInteger(v)) {
     return v
   }
 
   return createFail(failOrThrow, 'expected a safe integer', v)
-}, true)
+}, meta)
 
 /**
  * A Number that is a `isSafeInteger()`
@@ -49,5 +53,9 @@ export function integer(options?: {
     }
 
     return n
-  }, true)
+  }, meta)
+}
+
+export function toSchema(): string {
+  return 'number'
 }
