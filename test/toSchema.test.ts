@@ -24,6 +24,11 @@ describe('toSchema', () => {
     expect(st.toSchema(runtype)).toBe('any')
   })
 
+  it('should work with custom and base runtype', () => {
+    const runtype = st.runtype((v) => v, st.stringAsInteger())
+    expect(st.toSchema(runtype)).toBe('string')
+  })
+
   it('should work with dictionary', () => {
     const runtype = st.dictionary(st.string(), st.boolean())
     expect(st.toSchema(runtype)).toBe('Record<string, boolean>')

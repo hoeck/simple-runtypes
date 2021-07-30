@@ -45,7 +45,7 @@ export function toSchema(runtype: Runtype<any>): string {
       return booleanToSchema()
 
     case 'custom':
-      return customToSchema()
+      return customToSchema(runtype, toSchema)
 
     case 'dictionary':
       return dictionaryToSchema(runtype, toSchema)
