@@ -54,7 +54,7 @@ export function toSchema(runtype: Runtype<any>): string {
       return enumToSchema(runtype)
 
     case 'guardedBy':
-      return guardedByToSchema()
+      return guardedByToSchema(runtype, toSchema)
 
     case 'ignore':
       return ignoreToSchema()

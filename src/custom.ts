@@ -22,11 +22,11 @@ export type Meta = Readonly<{
   baseRuntype?: Runtype<any>
 }>
 
-function ensureBaseValue(
+export function ensureBaseValue(
   v: unknown,
   failOrThrow: typeof failSymbol | undefined,
   baseRuntype?: Runtype<any>,
-) {
+): any {
   if (!baseRuntype) {
     return v
   }

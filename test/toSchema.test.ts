@@ -44,6 +44,17 @@ describe('toSchema', () => {
     expect(st.toSchema(runtype)).toBe('any')
   })
 
+  it('should work with guardedBy with base runtype', () => {
+    type EvenIntStr = string & { _: never }
+    const guard = (
+      originalValue: unknown,
+      baseRuntypeValue: number,
+    ): originalValue is EvenIntStr => baseRuntypeValue % 2 === 0
+
+    const runtype = st.guardedBy(guard, st.stringAsInteger())
+    expect(st.toSchema(runtype)).toBe('string')
+  })
+
   it('should work with ignore', () => {
     const runtype = st.ignore()
     expect(st.toSchema(runtype)).toBe('any')
