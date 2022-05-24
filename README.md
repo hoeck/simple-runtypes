@@ -169,7 +169,7 @@ Collection runtypes such as [`record`](src/record.ts#L134), [`array`](src/array.
 ```typescript
 const nestedRuntype = st.record({
   name: st.string(),
-  items: st.array(st.recorcd({ id: st.integer, label: st.string() })),
+  items: st.array(st.record({ id: st.integer, label: st.string() })),
 })
 
 nestedRuntype({
