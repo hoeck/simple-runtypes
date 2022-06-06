@@ -209,7 +209,7 @@ const networdStateRuntype = st.union(
   networkSuccessState,
 )
 
-type NetworkState = ReturnType<networkStateRuntype>
+type NetworkState = ReturnType<typeof networkStateRuntype>
 ```
 
 Finding the runtype to validate a specific discriminating union with is done efficiently with a [`Map`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map).
