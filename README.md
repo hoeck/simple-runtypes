@@ -6,8 +6,8 @@
 
 I said I want **SIMPLE** runtypes.
 Just functions that validate and return data.
-Combine them into complex types and Typescript knows their structure.
-Thats how runtypes work.
+Combine them into complex types and TypeScript knows their structure.
+That's how runtypes work.
 
 <!-- toc -->
 
@@ -89,13 +89,13 @@ Why should I use this over the plethora of [other](https://github.com/moltar/typ
 1. Strict: by default safe against proto injection attacks and unwanted properties
 2. Fast: check the [benchmark](https://github.com/moltar/typescript-runtime-type-benchmarks)
 3. Friendly: no use of `eval`, a small [footprint](https://bundlephobia.com/result?p=simple-runtypes) and no dependencies
-4. Flexible: optionally modify the data while its being checked: trim strings, convert numbers, parse dates
+4. Flexible: optionally modify the data while it's being checked: trim strings, convert numbers, parse dates
 
 ## Benchmarks
 
-[@moltar](https://github.com/moltar) has done a great job comparing existing runtime typechecking libraries in [moltar/typescript-runtime-type-benchmarks](https://github.com/moltar/typescript-runtime-type-benchmarks).
+[@moltar](https://github.com/moltar) has done a great job comparing existing runtime type-checking libraries in [moltar/typescript-runtime-type-benchmarks](https://github.com/moltar/typescript-runtime-type-benchmarks).
 
-[@pongo](https://github.com/pongo) has benchmarked [simple-runtypes](https://github.com/hoeck/simple-runtypes) against [io-ts](https://github.com/gcanti/io-ts) in [pongo/benchmark-simple-runtypes](https://github.com/pongo/benchmark-simple-runtypes).
+[@pongo](https://github.com/pongo) has benchmarked [`simple-runtypes`](https://github.com/hoeck/simple-runtypes) against [`io-ts`](https://github.com/gcanti/io-ts) in [pongo/benchmark-simple-runtypes](https://github.com/pongo/benchmark-simple-runtypes).
 
 ## Documentation
 
@@ -115,7 +115,7 @@ interface Runtype<T> {
 ```
 
 Runtypes are constructed by calling factory functions.
-For instance, [`string`](src/string.ts#L28) creates and retuns a string runtype.
+For instance, [`string`](src/string.ts#L28) creates and returns a string runtype.
 Check the factory functions documentation for more details.
 
 ### Usage Examples
@@ -180,9 +180,9 @@ nestedRuntype({
 
 #### Discriminating Unions
 
-Simple-runtypes supports [Discriminating Unions](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#discriminating-unions) via the [`union`](src/union.ts#L143) runtype.
+`simple-runtypes` supports [Discriminating Unions](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#discriminating-unions) via the [`union`](src/union.ts#L143) runtype.
 
-The example found in the [Typescript Handbook](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#discriminating-unions) translated to simple-runtypes:
+The example found in the [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#discriminating-unions) translated to `simple-runtypes`:
 
 ```typescript
 const networkLoadingState = st.record({
@@ -237,7 +237,7 @@ bigIntRuntype("2.2") // => error: "expected string to match ..."
 
 ### Reference
 
-Basic runtypes that match TS / Javascript types:
+Basic runtypes that match JavaScript/TypeScript types:
 
 - [`number`](src/number.ts#L13)
 - [`string`](src/string.ts#L28)
@@ -247,7 +247,7 @@ Basic runtypes that match TS / Javascript types:
 - [`enum`](src/enum.ts#9)
 - [`literal`](src/literal.ts#L10)
 
-Meta runtypes
+Meta runtypes:
 
 - [`integer`](src/integer.ts#L26)
 - [`stringAsInteger`](src/stringAsInteger.ts#L62)
@@ -256,7 +256,7 @@ Meta runtypes
 - [`any`](src/any.ts#L6)
 - [`json`](src/json.ts#L27)
 
-Objects and Array Runtypes
+Objects and Array Runtypes:
 
 - [`tuple`](src/tuple.ts#L42)
 - [`array`](src/array.ts#L28)
@@ -265,7 +265,7 @@ Objects and Array Runtypes
 - [`sloppyRecord`](src/record.ts#L159)
 - [`dictionary`](src/dictionary.ts#L87)
 
-Combinators
+Combinators:
 
 - [`union`](src/union.ts#L143)
 - [`intersection`](src/intersection.ts#L110)
@@ -274,7 +274,7 @@ Combinators
 - [`partial`](src/partial.ts#L10)
 - TODO: `get` - similar to Type[key]
 
-Shortcuts
+Shortcuts:
 
 - [`nullOr`](src/nullOr.ts#L11)
 - [`undefinedOr`](src/undefinedOr.ts#L11)
@@ -291,10 +291,10 @@ Shortcuts
 - improve docs:
   - *preface*: what is a runtype and why is it useful
   - *why*: explain or link to example that shows "strict by default"
-  - show that simple-runtypes is feature complete because it can
-    1. express all typescript types
+  - show that `simple-runtypes` is feature complete because it can
+    1. express all TypeScript types
     2. is extendable with custom runtypes (add documentation)
-  - add small frontend and backend example projects that show how to use simple-runtypes in production
+  - add small frontend and backend example projects that show how to use `simple-runtypes` in production
 - test types with [tsd](https://github.com/SamVerschueren/tsd)
 - add missing combinators: partial, required
 - add other combinators like partial, required, ...
