@@ -145,7 +145,7 @@ Use [`sloppyRecord`](src/record.ts#L159) to only validate known properties and r
 ```typescript
 const sloppy = st.sloppyRecord({name: st.string()})
 
-strict({name: 'foo', other: 123, bar: []})
+sloppy({name: 'foo', other: 123, bar: []})
 // => {name: foo}
 ```
 
