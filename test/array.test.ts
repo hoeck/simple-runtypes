@@ -40,4 +40,12 @@ describe('array', () => {
 
     expectRejectValues(runtype, [undefined, null, ['asd'], [undefined, 1], '1'])
   })
+
+  it('ignores keys already ignored by sloppyRecord', () => {
+    const runtype = st.array(st.sloppyRecord({ a: st.number() }))
+
+    expect(runtype([{ a: 1, b: 'not-in-record-definition' }])).toEqual([
+      { a: 1 },
+    ])
+  })
 })
