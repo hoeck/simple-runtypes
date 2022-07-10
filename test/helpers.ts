@@ -5,7 +5,7 @@ import { isPureRuntypeSymbol } from '../src/runtype'
 export * as st from '../src'
 
 // impure: the value returned by the runtype must have been modified in-place
-// and thus its a new value; the runtype will also not have an `isPure` property
+// and thus its a new value; the runtype will also not have an isPure property
 export function expectAcceptValuesImpure<T>(
   rt: st.Runtype<T>,
   values: unknown[],
@@ -27,7 +27,7 @@ export function expectAcceptValuesImpure<T>(
 }
 
 // pure: the value returned by the runtype must *not* have been modified and
-// is exactly the same value; the
+// is exactly the same value; the runtype will also have an isPure property
 export function expectAcceptValuesPure<T>(
   rt: st.Runtype<T>,
   values: unknown[],
