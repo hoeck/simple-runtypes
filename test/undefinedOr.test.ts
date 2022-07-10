@@ -6,11 +6,13 @@ describe('undefinedOr', () => {
   })
 
   it('deals with impure runtypes', () => {
-    expectAcceptValuesPure(st.undefinedOr(st.string({ trim: true })), [
-      undefined,
-      'foo',
-      '',
-    ])
+    const rt = st.undefinedOr(st.string({ trim: true }))
+
+    expect(rt).not.toHaveProperty('isPure')
+
+    expect(rt(undefined)).toEqual(undefined)
+    expect(rt('')).toEqual('')
+    expect(rt('foo ')).toEqual('foo')
   })
 
   it('rejects non-undefined and non-T', () => {

@@ -6,11 +6,13 @@ describe('nullOr', () => {
   })
 
   it('deals with impure runtypes', () => {
-    expectAcceptValuesPure(st.nullOr(st.string({ trim: true })), [
-      null,
-      'foo',
-      '',
-    ])
+    const rt = st.nullOr(st.string({ trim: true }))
+
+    expect(rt).not.toHaveProperty('isPure')
+
+    expect(rt(null)).toEqual(null)
+    expect(rt('')).toEqual('')
+    expect(rt('foo ')).toEqual('foo')
   })
 
   it('rejects non-null and non-T', () => {
