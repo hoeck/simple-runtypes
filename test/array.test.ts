@@ -1,4 +1,9 @@
-import { expectAcceptValuesPure, expectRejectValues, st } from './helpers'
+import {
+  expectAcceptValuesImpure,
+  expectAcceptValuesPure,
+  expectRejectValues,
+  st,
+} from './helpers'
 
 describe('array', () => {
   it('accepts valid arrays', () => {
@@ -41,11 +46,16 @@ describe('array', () => {
     expectRejectValues(runtype, [undefined, null, ['asd'], [undefined, 1], '1'])
   })
 
-  it('ignores keys already ignored by sloppyRecord', () => {
-    const runtype = st.array(st.sloppyRecord({ a: st.number() }))
+  it('deals with impure runtypes', () => {
+    const rt = st.array(st.string({ trim: true }))
 
-    expect(runtype([{ a: 1, b: 'not-in-record-definition' }])).toEqual([
-      { a: 1 },
-    ])
+    expectAcceptValuesImpure(
+      rt,
+      [
+        [[''], ['']],
+        [['foo '], ['foo']],
+      ],
+      true,
+    )
   })
 })
