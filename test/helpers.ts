@@ -1,20 +1,26 @@
 import * as st from '../src'
+import { isPureRuntypeSymbol } from '../src/runtype'
 
-// // re-export so tests don't depend on the weird src directory
+// re-export so tests don't depend on the weird src directory
 export * as st from '../src'
 
 // impure: the value returned by the runtype must have been modified in-place
-// and thus its a new value
+// and thus its a new value; the runtype will also not have an isPure property
 export function expectAcceptValuesImpure<T>(
   rt: st.Runtype<T>,
   values: unknown[],
   valuesAreTuples = false,
 ): void {
+  expect(rt).not.toHaveProperty('isPure')
+
   values.forEach((v) => {
     const [vIn, vOut] = valuesAreTuples ? (v as [unknown, unknown]) : [v, v]
     const result = st.use(rt, vIn)
 
     expect(result).toEqual({ ok: true, result: vOut })
+    // this identity check does not account for unmodified primitive values,
+    // which are always identical to themselves; these cases are handled
+    // directly in the relevant tests
     expect(result.ok && result.result).not.toBe(vIn)
 
     // check both, the error throwing api and the wrapped-result returning
@@ -24,11 +30,13 @@ export function expectAcceptValuesImpure<T>(
 }
 
 // pure: the value returned by the runtype must *not* have been modified and
-// is exactly the same value
+// is exactly the same value; the runtype will also have an isPure property
 export function expectAcceptValuesPure<T>(
   rt: st.Runtype<T>,
   values: unknown[],
 ): void {
+  expect(rt).toHaveProperty('isPure', isPureRuntypeSymbol)
+
   values.forEach((v) => {
     const result = st.use(rt, v)
 

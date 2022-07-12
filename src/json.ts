@@ -19,7 +19,7 @@ export const jsonRuntype = internalRuntype<unknown>((v, failOrThrow) => {
   } catch (err) {
     return createFail(failOrThrow, 'expected a json string: ' + String(err), v)
   }
-}, true)
+}, false)
 
 /**
  * A String that is valid json
@@ -39,5 +39,5 @@ export function json<T>(rt: Runtype<any>): Runtype<T> {
     }
 
     return validationResult.result
-  }, true)
+  }, false)
 }
