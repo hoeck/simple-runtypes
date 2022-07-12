@@ -1,4 +1,9 @@
-import { expectAcceptValuesPure, expectRejectValues, st } from './helpers'
+import {
+  expectAcceptValuesImpure,
+  expectAcceptValuesPure,
+  expectRejectValues,
+  st,
+} from './helpers'
 
 describe('undefinedOr', () => {
   it('accepts undefined or T', () => {
@@ -8,11 +13,19 @@ describe('undefinedOr', () => {
   it('deals with impure runtypes', () => {
     const rt = st.undefinedOr(st.string({ trim: true }))
 
-    expect(rt).not.toHaveProperty('isPure')
+    expectAcceptValuesImpure(
+      rt,
+      [
+        [' ', ''],
+        ['foo ', 'foo'],
+      ],
+      true,
+    )
 
+    // we need to test unmodified primitive values directly because the
+    // test helper assumes that the runtype result will not be identical
+    // to the original value
     expect(rt(undefined)).toEqual(undefined)
-    expect(rt('')).toEqual('')
-    expect(rt('foo ')).toEqual('foo')
   })
 
   it('rejects non-undefined and non-T', () => {

@@ -18,6 +18,9 @@ export function expectAcceptValuesImpure<T>(
     const result = st.use(rt, vIn)
 
     expect(result).toEqual({ ok: true, result: vOut })
+    // this identity check does not account for unmodified primitive values,
+    // which are always identical to themselves; these cases are handled
+    // directly in the relevant tests
     expect(result.ok && result.result).not.toBe(vIn)
 
     // check both, the error throwing api and the wrapped-result returning
