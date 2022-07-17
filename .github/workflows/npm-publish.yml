@@ -30,11 +30,9 @@ on:
   push:
     tags:
       - 'v*'
-    branches:
-      - master
 
 jobs:
-  test:
+  publish:
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -47,6 +45,7 @@ jobs:
 
     name: ${{ matrix.os }} Node ${{ matrix.node }} cache
 
+    if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v2
 
