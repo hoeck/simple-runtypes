@@ -1,3 +1,7 @@
+### 7.1.1
+
+- fix: make `sloppyRecord` impure
+
 ### 7.1.0
 
 - add `json` runtype
