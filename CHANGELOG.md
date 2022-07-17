@@ -1,3 +1,7 @@
+### 7.1.1
+
+- fix: make `sloppyRecord` impure (closes [#60](https://github.com/hoeck/simple-runtypes/issues/60))
+
 ### 7.1.0
 
 - add `json` runtype
