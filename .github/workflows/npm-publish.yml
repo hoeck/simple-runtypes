@@ -28,6 +28,7 @@ name: npm-publish
 
 on:
   push:
+    # PRs do not contain tags, so we do not need any other filter here
     tags:
       - 'v*'
 
@@ -45,7 +46,6 @@ jobs:
 
     name: ${{ matrix.os }} Node ${{ matrix.node }} cache
 
-    if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v2
 
