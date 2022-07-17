@@ -130,7 +130,7 @@ export type Unpack<T> = T extends Runtype<infer U>
 // force Typescript to boil down complex mapped types to a plain interface
 export type Collapse<T> = T extends infer U ? { [K in keyof U]: U[K] } : never
 
-const isPureRuntypeSymbol = Symbol('isPure')
+export const isPureRuntypeSymbol = Symbol('isPure')
 
 // The internal runtype is one that receives an additional flag that
 // determines whether the runtype should throw a RuntypeError or whether it

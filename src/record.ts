@@ -31,8 +31,8 @@ function internalRecord(
   typemap: { [key: string]: Runtype<any> | OptionalRuntype<any> },
   sloppy: boolean,
 ): Runtype<any> {
-  const isPure = isPureTypemap(typemap)
-  const copyObject = sloppy || !isPure
+  // a sloppy record may ignore keys and so cannot be pure
+  const isPure = !sloppy && isPureTypemap(typemap)
 
   // cache typemap in arrays for a faster loop
   const typemapKeys = [...Object.keys(typemap)]
@@ -46,9 +46,8 @@ function internalRecord(
 
     const o: any = v
 
-    // optimize allocations: only create a copy if any of the key runtypes
-    // return a different object - otherwise return value as is
-    const res = copyObject ? {} : o
+    // optimize allocations: only create a copy if the record is impure
+    const res = isPure ? o : {}
 
     for (let i = 0; i < typemapKeys.length; i++) {
       const k = typemapKeys[i]
@@ -70,7 +69,7 @@ function internalRecord(
         return propagateFail(failOrThrow, value, v, k)
       }
 
-      if (copyObject) {
+      if (!isPure) {
         res[k] = value
       }
     }

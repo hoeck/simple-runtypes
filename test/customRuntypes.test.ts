@@ -1,6 +1,6 @@
 import * as sr from '../src'
 import { failSymbol } from '../src/runtype'
-import { expectAcceptValuesPure, expectRejectValues } from './helpers'
+import { expectRejectValues } from './helpers'
 
 describe('custom runtypes', () => {
   describe('simple nested runtypes', () => {
@@ -17,7 +17,9 @@ describe('custom runtypes', () => {
     })
 
     it('should create a custom runtype', () => {
-      expectAcceptValuesPure(rt, ['-', 31])
+      expect(rt('-')).toEqual('-')
+      expect(rt(31)).toEqual(31)
+
       expectRejectValues(rt, ['31', null, 123, []])
     })
 

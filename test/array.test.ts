@@ -1,4 +1,9 @@
-import { expectAcceptValuesPure, expectRejectValues, st } from './helpers'
+import {
+  expectAcceptValuesImpure,
+  expectAcceptValuesPure,
+  expectRejectValues,
+  st,
+} from './helpers'
 
 describe('array', () => {
   it('accepts valid arrays', () => {
@@ -39,5 +44,18 @@ describe('array', () => {
     const runtype = st.array(st.number())
 
     expectRejectValues(runtype, [undefined, null, ['asd'], [undefined, 1], '1'])
+  })
+
+  it('deals with impure runtypes', () => {
+    const rt = st.array(st.string({ trim: true }))
+
+    expectAcceptValuesImpure(
+      rt,
+      [
+        [[''], ['']],
+        [['foo '], ['foo']],
+      ],
+      true,
+    )
   })
 })
