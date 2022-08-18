@@ -285,7 +285,7 @@ Shortcuts:
 - rename [`stringLiteralUnion`](src/stringLiteralUnion.ts#L6) to `literals` or `literalUnion` and make it work
   on all types that [`literal`](src/literal.ts#L10) accepts
 - rename record to object: [#69](https://github.com/hoeck/simple-runtypes/issues/69)
-- nonStrict modifier instead of sloppy: [#68](https://github.com/hoeck/simple-runtypes/issues/60)
+- nonStrict modifier instead of sloppy: [#68](https://github.com/hoeck/simple-runtypes/issues/68)
 - improve docs:
   - *preface*: what is a runtype and why is it useful
   - *why*: explain or link to example that shows "strict by default"
