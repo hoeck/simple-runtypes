@@ -35,3 +35,18 @@ const data: unknown = null
 
   expectType<{ a: { b: { c: string } } }>(rt(data))
 }
+
+// record with json
+{
+  const rt = st.record({
+    a: st.string(),
+    b: st.json(
+      st.record({
+        c: st.string(),
+      }),
+    ),
+    d: st.string(),
+  })
+
+  expectType<{ a: string; b: { c: string }; d: string }>(rt(data))
+}

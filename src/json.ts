@@ -24,8 +24,8 @@ export const jsonRuntype = internalRuntype<unknown>((v, failOrThrow) => {
 /**
  * A String that is valid json
  */
-export function json<T>(rt: Runtype<any>): Runtype<T> {
-  return internalRuntype<T>((v, failOrThrow) => {
+export function json<T>(rt: Runtype<T>): Runtype<T> {
+  return internalRuntype<any>((v, failOrThrow) => {
     const n = (jsonRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(n)) {
