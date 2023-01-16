@@ -284,10 +284,8 @@ Shortcuts:
 - `size` - a meta-runtype that imposes a size limit on types, maybe via convert-to-json and .length on the value passed to it
 - rename [`stringLiteralUnion`](src/stringLiteralUnion.ts#L6) to `literals` or `literalUnion` and make it work
   on all types that [`literal`](src/literal.ts#L10) accepts
-- rename [`sloppyRecord`](src/record.ts#L159) to `record.sloppy` because I need
-  the "sloppy"-concept for other runtypes too: e.g. `nullable.sloppy` - a
-  `Runtype<T | null>` that also accepts `undefined` which is useful to slowly
-  add new nullable fields to existing json database records
+- rename record to object: [#69](https://github.com/hoeck/simple-runtypes/issues/69)
+- nonStrict modifier instead of sloppy: [#68](https://github.com/hoeck/simple-runtypes/issues/68)
 - improve docs:
   - *preface*: what is a runtype and why is it useful
   - *why*: explain or link to example that shows "strict by default"
@@ -295,6 +293,7 @@ Shortcuts:
     1. express all TypeScript types
     2. is extendable with custom runtypes (add documentation)
   - add small frontend and backend example projects that show how to use `simple-runtypes` in production
-- test types with [tsd](https://github.com/SamVerschueren/tsd)
-- add missing combinators: partial, required
-- add other combinators like partial, required, ...
+- test *all* types with [tsd](https://github.com/SamVerschueren/tsd)
+- add more combinators: partial, required, get, ...
+- separate `Runtype` and `InternalRuntype` and type runtype internals
+  (see [this comment](https://github.com/hoeck/simple-runtypes/pull/73#discussion_r948841977))
