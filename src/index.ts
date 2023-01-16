@@ -46,6 +46,7 @@ export { dictionary } from './dictionary'
 
 // advanced / utility types
 export { intersection } from './intersection'
+export { nonStrict } from './nonStrict'
 export { omit } from './omit'
 export { partial } from './partial'
 export { pick } from './pick'

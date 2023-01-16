@@ -1,5 +1,5 @@
-import { record } from './record'
-import { Runtype, RuntypeUsageError } from './runtype'
+import { internalRecord } from './record'
+import { Runtype, RuntypeUsageError, isNonStrictRuntype } from './runtype'
 
 /**
  * Build a new record runtype that contains some keys from the original
@@ -20,6 +20,8 @@ export function pick<T, K extends keyof T>(
     newRecordFields[k] = fields[k]
   })
 
-  // TODO: keep 'sloppyness'
-  return record(newRecordFields) as Runtype<any>
+  return internalRecord(
+    newRecordFields,
+    isNonStrictRuntype(original),
+  ) as Runtype<any>
 }

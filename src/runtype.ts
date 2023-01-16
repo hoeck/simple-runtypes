@@ -183,3 +183,9 @@ export function isFail(v: unknown): v is Fail {
 
   return (v as any)[failSymbol]
 }
+
+export function isNonStrictRuntype(fn: Runtype<any>): boolean {
+  return !!(fn as any).isNonStrict
+}
+
+export const isNonStrictRuntypeSymbol = Symbol('isNonStrict')
