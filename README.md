@@ -76,7 +76,7 @@ st.use(userRuntype, {id: 1, name: 'matt', isAdmin: true})
 // => {ok: false, error: FAIL}
 
 st.getFormattedError(FAIL)
-// => 'invalid keys in record ["isAdmin"] at `<value>` in `{"id":1,"name": "matt", ... }`'
+// => 'invalid keys in record: ["isAdmin"] at `<value>` in `{"id":1,"name": "matt", ... }`'
 ```
 
 Not throwing errors is way more efficient and less obscure.
