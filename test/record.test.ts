@@ -94,10 +94,19 @@ describe('record', () => {
       a: st.integer(),
       b: st.string(),
     })
-
     expect(() =>
       runType({ a: 1, b: 'foo', c: 'not-in-record-definition' }),
-    ).toThrow('invalid keys in record')
+    ).toThrow('invalid keys in record: ["c"]')
+
+    const nestedRunType = st.record({
+      a: st.integer(),
+      d: st.record({
+        e: st.string(),
+      }),
+    })
+    expect(() =>
+      nestedRunType({ a: 1, d: { e: 'foo', f: 'not-in-record-definition' } }),
+    ).toThrow('invalid keys in record: ["f"]')
   })
 
   it('rejects records with object attributes', () => {
