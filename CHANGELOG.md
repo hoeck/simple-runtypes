@@ -1,3 +1,7 @@
+### 7.1.3
+
+- fix: invalid key message was displaying the object instead of the keys, see [#91](https://github.com/hoeck/simple-runtypes/issues/91)
+
 ### 7.1.2
 
 - fix: `json` now keeps the type information from the passed runtype
