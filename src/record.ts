@@ -82,14 +82,14 @@ export function internalRecord(
 
       for (const k in o) {
         if (!Object.prototype.hasOwnProperty.call(typemap, k)) {
-          unknownKeys.push(o)
+          unknownKeys.push(k)
         }
       }
 
       if (unknownKeys.length) {
         return createFail(
           failOrThrow,
-          `invalid keys in record ${debugValue(unknownKeys)}`,
+          `invalid keys in record: ${debugValue(unknownKeys)}`,
           v,
         )
       }
