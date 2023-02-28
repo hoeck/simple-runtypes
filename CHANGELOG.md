@@ -1,3 +1,10 @@
+### Unreleased
+
+- add `nonStrict` combinator ([#90](https://github.com/hoeck/simple-runtypes/pull/90))
+  - `nonStrict` creates a non-strict `record` runtype from a provided `record` runtype
+  - a non-strict `record` runtype will ignore keys that are not specified in the original runtype's typemap
+  - non-strict `record` runtypes will replace `sloppyRecord` runtypes
+
 ### 7.1.3
 
 - fix: invalid key message was displaying the object instead of the keys, see [#91](https://github.com/hoeck/simple-runtypes/issues/91)
