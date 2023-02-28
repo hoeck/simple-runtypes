@@ -10,6 +10,7 @@ import {
   OptionalRuntype,
   Collapse,
   Unpack,
+  isNonStrictRuntypeSymbol,
 } from './runtype'
 import { debugValue } from './runtypeError'
 
@@ -27,12 +28,14 @@ function isPureTypemap(typemap: object) {
   return true
 }
 
-function internalRecord(
-  typemap: { [key: string]: Runtype<any> | OptionalRuntype<any> },
-  sloppy: boolean,
+export function internalRecord(
+  typemap: {
+    [key: string]: Runtype<any> | OptionalRuntype<any>
+  },
+  isNonStrict = false,
 ): Runtype<any> {
-  // a sloppy record may ignore keys and so cannot be pure
-  const isPure = !sloppy && isPureTypemap(typemap)
+  // a nonStrict record may ignore keys and so cannot be pure
+  const isPure = !isNonStrict && isPureTypemap(typemap)
 
   // cache typemap in arrays for a faster loop
   const typemapKeys = [...Object.keys(typemap)]
@@ -74,7 +77,7 @@ function internalRecord(
       }
     }
 
-    if (!sloppy) {
+    if (!isNonStrict) {
       const unknownKeys: string[] = []
 
       for (const k in o) {
@@ -105,6 +108,11 @@ function internalRecord(
 
   // eslint-disable-next-line no-extra-semi
   ;(rt as any).fields = fields
+
+  if (isNonStrict) {
+    // eslint-disable-next-line no-extra-semi
+    ;(rt as any).isNonStrict = isNonStrictRuntypeSymbol
+  }
 
   return rt
 }
@@ -144,7 +152,7 @@ export function record<
       { [K in OptionalKeys]?: Unpack<Typemap[K]> }
   >
 > {
-  return internalRecord(typemap as any, false)
+  return internalRecord(typemap as any)
 }
 
 /**

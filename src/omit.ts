@@ -1,5 +1,5 @@
-import { record } from './record'
-import { Runtype, RuntypeUsageError } from './runtype'
+import { internalRecord } from './record'
+import { Runtype, RuntypeUsageError, isNonStrictRuntype } from './runtype'
 
 /**
  * Build a new record runtype that omits some keys from the original.
@@ -21,6 +21,8 @@ export function omit<T, K extends keyof T>(
     delete newRecordFields[k]
   })
 
-  // TODO: keep 'sloppyness'
-  return record(newRecordFields) as Runtype<any>
+  return internalRecord(
+    newRecordFields,
+    isNonStrictRuntype(original),
+  ) as Runtype<any>
 }

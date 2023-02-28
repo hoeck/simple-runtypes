@@ -1,4 +1,9 @@
-import { expectAcceptValuesPure, expectRejectValues, st } from './helpers'
+import {
+  expectAcceptValuesImpure,
+  expectAcceptValuesPure,
+  expectRejectValues,
+  st,
+} from './helpers'
 
 describe('pick & omit', () => {
   const record = st.record({
@@ -36,6 +41,31 @@ describe('pick & omit', () => {
 
     expectRejectValues(pickedRt, rejectedValues)
     expectRejectValues(omittedRt, rejectedValues)
+  })
+
+  it('should preserve nonStrict', () => {
+    const nonStrictRecordRuntype = st.nonStrict(
+      st.record({ a: st.string(), b: st.string(), c: st.string() }),
+    )
+
+    const pickedRuntype = st.pick(nonStrictRecordRuntype, 'a', 'b')
+    const omittedRuntype = st.omit(nonStrictRecordRuntype, 'a', 'b')
+
+    expectAcceptValuesImpure(
+      pickedRuntype,
+      [
+        [
+          { a: 'a', b: 'b', c: 'c', d: 'd' },
+          { a: 'a', b: 'b' },
+        ],
+      ],
+      true,
+    )
+    expectAcceptValuesImpure(
+      omittedRuntype,
+      [[{ a: 'a', b: 'b', c: 'c', d: 'd' }, { c: 'c' }]],
+      true,
+    )
   })
 })
 

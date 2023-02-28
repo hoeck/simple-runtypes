@@ -1,4 +1,9 @@
-import { expectAcceptValuesPure, expectRejectValues, st } from './helpers'
+import {
+  expectAcceptValuesImpure,
+  expectAcceptValuesPure,
+  expectRejectValues,
+  st,
+} from './helpers'
 
 describe('partial', () => {
   const record = st.record({
@@ -49,5 +54,15 @@ describe('partial', () => {
     ]
 
     expectRejectValues(partialRt, rejectedValues)
+  })
+
+  it('should preserve nonStrict', () => {
+    const nonStrictRecordRuntype = st.nonStrict(st.record({ a: st.string() }))
+    const partialRuntype = st.partial(nonStrictRecordRuntype)
+    expectAcceptValuesImpure(
+      partialRuntype,
+      [[{ a: 'a', b: 'b' }, { a: 'a' }]],
+      true,
+    )
   })
 })
