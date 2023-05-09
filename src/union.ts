@@ -24,7 +24,7 @@ function internalDiscriminatedUnion(
   key: string,
   runtypes: Runtype<any>[],
 ): Runtype<any> {
-  const typeMap = new Map<string | number, Runtype<any>>()
+  const typeMap = new Map<string | number | boolean, Runtype<any>>()
 
   // build an index for fast runtype lookups by literal
   runtypes.forEach((t: any) => {
@@ -37,9 +37,15 @@ function internalDiscriminatedUnion(
       )
     }
 
-    if (!(typeof tagValue === 'string' || typeof tagValue === 'number')) {
+    if (
+      !(
+        typeof tagValue === 'string' ||
+        typeof tagValue === 'number' ||
+        typeof tagValue === 'boolean'
+      )
+    ) {
       throw new RuntypeUsageError(
-        `broken record type definition, ${t}[${key}] must be a string or number, not ${debugValue(
+        `broken record type definition, ${t}[${key}] must be a literal, not ${debugValue(
           tagValue,
         )}`,
       )

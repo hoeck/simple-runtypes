@@ -36,7 +36,7 @@ describe('union', () => {
   })
 })
 
-describe('discriminatedUnion', () => {
+describe('discriminated union', () => {
   enum Tag {
     A = 'a_tag',
     B = 'b_tag',
@@ -127,6 +127,49 @@ describe('discriminatedUnion', () => {
       JSON.parse(
         `{"__proto__": {"key": "a", "value": "asd"}, "key": "a", "value": "asd"}`,
       ),
+    ])
+  })
+
+  it('should allow numbers and booleans as discrimination literals too', () => {
+    const runtype = st.union(
+      st.record({
+        type: st.literal(1),
+        number: st.number(),
+      }),
+      st.record({ type: st.literal(true), boolean: st.boolean() }),
+      st.record({ type: st.literal('a'), string: st.string() }),
+    )
+
+    expectAcceptValuesPure(runtype, [
+      { type: 1, number: 2 },
+      { type: true, boolean: false },
+      { type: 'a', string: 'b' },
+    ])
+
+    expectRejectValues(runtype, [
+      // incorrect type
+      { type: 1, number: 'foo' },
+      { type: 1, boolean: false },
+      { type: true, boolean: 1 },
+      { type: true, boolean: false, number: 1 },
+      { type: 'a', number: 1 },
+      { type: 'a', string: 'a', boolean: false, number: 1 },
+      { type: 'a', string: false },
+      // non-existing type discriminator
+      { type: 2 },
+      { type: 2, number: 2 },
+      { type: false, boolean: true },
+      { type: false, number: 1 },
+      { type: 'b', string: 'a' },
+      { type: 'c' },
+      { type: '' },
+      // completely missing type literal
+      { type: null },
+      { string: 'b' },
+      {},
+      { number: false },
+      { boolean: 1 },
+      { a: 1 },
     ])
   })
 })
