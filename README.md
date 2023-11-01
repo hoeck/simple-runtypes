@@ -308,3 +308,13 @@ Shortcuts:
 - add more combinators: partial, required, get, ...
 - separate [`Runtype`](src/runtype.ts#L106) and [`InternalRuntype`](src/runtype.ts#L171) and type runtype internals
   (see [this comment](https://github.com/hoeck/simple-runtypes/pull/73#discussion_r948841977))
+
+
+#### current tasks (metadata) notes
+
+- check that intersection & union tests do properly test the distribution stuff
+- make getMetadata public
+- maybe make metadata typed and include all options so that you can walk the tree to create testdata orjson-schemas from types
+- maybe add a `serialize` function to each runtype too? to use instead of JSON.stringify and to provide a full-service library?
+- maybe make `any` a forbidden type of a runtype
+- maybe move the `isPure` checks more outward (out of the loops in array and object runtypes)

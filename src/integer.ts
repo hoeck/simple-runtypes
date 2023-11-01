@@ -1,19 +1,19 @@
 import {
   createFail,
   InternalRuntype,
-  internalRuntype,
+  setupInternalRuntype,
   isFail,
   propagateFail,
   Runtype,
 } from './runtype'
 
-export const integerRuntype = internalRuntype<number>((v, failOrThrow) => {
+export const integerRuntype = setupInternalRuntype<number>((v, failOrThrow) => {
   if (typeof v === 'number' && Number.isSafeInteger(v)) {
     return v
   }
 
   return createFail(failOrThrow, 'expected a safe integer', v)
-}, true)
+})
 
 /**
  * A Number that is a `isSafeInteger()`
@@ -33,8 +33,8 @@ export function integer(options?: {
 
   const { min, max } = options
 
-  return internalRuntype<number>((v, failOrThrow) => {
-    const n = (integerRuntype as InternalRuntype)(v, failOrThrow)
+  return setupInternalRuntype<number>((v, failOrThrow) => {
+    const n = (integerRuntype as InternalRuntype<number>)(v, failOrThrow)
 
     if (isFail(n)) {
       return propagateFail(failOrThrow, n, v)
@@ -49,5 +49,5 @@ export function integer(options?: {
     }
 
     return n
-  }, true)
+  })
 }

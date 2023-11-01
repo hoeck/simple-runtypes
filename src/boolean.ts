@@ -1,12 +1,15 @@
-import { createFail, internalRuntype, Runtype } from './runtype'
+import { createFail, Runtype, setupInternalRuntype } from './runtype'
 
-const booleanRuntype = internalRuntype<boolean>((v, failOrThrow) => {
-  if (v === true || v === false) {
-    return v
-  }
+const booleanRuntype = setupInternalRuntype<boolean>(
+  (v, failOrThrow) => {
+    if (v === true || v === false) {
+      return v
+    }
 
-  return createFail(failOrThrow, 'expected a boolean', v)
-}, true)
+    return createFail(failOrThrow, 'expected a boolean', v)
+  },
+  { isPure: true },
+)
 
 /**
  * A boolean.

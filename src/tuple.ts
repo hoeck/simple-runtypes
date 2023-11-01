@@ -2,7 +2,7 @@ import {
   createFail,
   failSymbol,
   InternalRuntype,
-  internalRuntype,
+  setupInternalRuntype,
   isFail,
   isPureRuntype,
   propagateFail,
@@ -42,7 +42,7 @@ export function tuple<A, B, C, D, E>(
 export function tuple(...types: Runtype<any>[]): Runtype<any> {
   const isPure = types.every((t) => isPureRuntype(t))
 
-  return internalRuntype<any>((v, failOrThrow) => {
+  return setupInternalRuntype<any>((v, failOrThrow) => {
     const a = (arrayRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(a)) {

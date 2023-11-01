@@ -2,7 +2,7 @@ import {
   createFail,
   failSymbol,
   InternalRuntype,
-  internalRuntype,
+  setupInternalRuntype,
   isFail,
   isPureRuntype,
   propagateFail,
@@ -41,7 +41,7 @@ export function internalRecord(
   const typemapKeys = [...Object.keys(typemap)]
   const typemapValues = [...Object.values(typemap)]
 
-  const rt = internalRuntype((v, failOrThrow) => {
+  const rt = setupInternalRuntype((v, failOrThrow) => {
     // inlined object runtype for perf
     if (typeof v !== 'object' || Array.isArray(v) || v === null) {
       return createFail(failOrThrow, 'expected an object', v)

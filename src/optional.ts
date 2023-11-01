@@ -1,6 +1,6 @@
 import {
   InternalRuntype,
-  internalRuntype,
+  setupInternalRuntype,
   isPureRuntype,
   OptionalRuntype,
   Runtype,
@@ -18,7 +18,7 @@ import {
 export function optional<A>(t: Runtype<A>): OptionalRuntype<A> {
   const isPure = isPureRuntype(t)
 
-  const rt = internalRuntype((v, failOrThrow) => {
+  const rt = setupInternalRuntype((v, failOrThrow) => {
     if (v === undefined) {
       return undefined
     }

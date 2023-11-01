@@ -2,12 +2,12 @@ import { union } from './union'
 import { record } from './record'
 import {
   InternalRuntype,
-  internalRuntype,
+  setupInternalRuntype,
   isFail,
-  isPureRuntype,
   propagateFail,
   Runtype,
   RuntypeUsageError,
+  getMetadata,
 } from './runtype'
 
 // An intersection of two record runtypes
@@ -16,8 +16,8 @@ function recordIntersection2<A, B>(
   recordB: Runtype<B>,
 ): Runtype<A & B> {
   const fields: { [key: string]: Runtype<any> } = {}
-  const a = (recordA as any).fields
-  const b = (recordB as any).fields
+  const a = getMetadata(recordA)?.fields ?? {}
+  const b = getMetadata(recordB)?.fields ?? {}
 
   for (const k in { ...a, ...b }) {
     if (a[k] && b[k]) {
@@ -40,7 +40,7 @@ function unionIntersection2<A, B>(
   u: Runtype<A>,
   b: Runtype<B>,
 ): Runtype<A & B> {
-  const unionRuntypes: Runtype<any>[] = (u as any).unions
+  const unionRuntypes = getMetadata(u)?.unions
 
   if (
     !unionRuntypes ||
@@ -79,22 +79,25 @@ function intersection2(a: Runtype<any>, b: Runtype<any>): Runtype<any> {
       'intersection2: cannot intersect a base type with a record',
     )
   } else {
-    const isPure = isPureRuntype(a) && isPureRuntype(b)
+    return setupInternalRuntype(
+      (v, failOrThrow) => {
+        const valFromA = (a as InternalRuntype<any>)(v, failOrThrow)
+        const valFromB = (b as InternalRuntype<any>)(v, failOrThrow)
 
-    return internalRuntype((v, failOrThrow) => {
-      const valFromA = (a as InternalRuntype)(v, failOrThrow)
-      const valFromB = (b as InternalRuntype)(v, failOrThrow)
+        if (isFail(valFromB)) {
+          return propagateFail(failOrThrow, valFromB, v)
+        }
 
-      if (isFail(valFromB)) {
-        return propagateFail(failOrThrow, valFromB, v)
-      }
+        if (isFail(valFromA)) {
+          return propagateFail(failOrThrow, valFromA, v)
+        }
 
-      if (isFail(valFromA)) {
-        return propagateFail(failOrThrow, valFromA, v)
-      }
-
-      return valFromB // second runtype arg is preferred
-    }, isPure)
+        return valFromB // second runtype arg is preferred
+      },
+      {
+        isImpure: getMetadata(a)?.isImpure || getMetadata(b)?.isImpure,
+      },
+    )
   }
 }
 

@@ -1,14 +1,14 @@
 import {
   createFail,
   InternalRuntype,
-  internalRuntype,
+  setupInternalRuntype,
   isFail,
   propagateFail,
   Runtype,
 } from './runtype'
 import { use } from './custom'
 
-export const jsonRuntype = internalRuntype<unknown>((v, failOrThrow) => {
+export const jsonRuntype = setupInternalRuntype<unknown>((v, failOrThrow) => {
   if (!(typeof v === 'string')) {
     return createFail(failOrThrow, 'expected a json string', v)
   }
@@ -25,7 +25,7 @@ export const jsonRuntype = internalRuntype<unknown>((v, failOrThrow) => {
  * A String that is valid json
  */
 export function json<T>(rt: Runtype<T>): Runtype<T> {
-  return internalRuntype<any>((v, failOrThrow) => {
+  return setupInternalRuntype<any>((v, failOrThrow) => {
     const n = (jsonRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(n)) {

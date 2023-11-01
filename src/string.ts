@@ -1,13 +1,13 @@
 import {
   createFail,
   InternalRuntype,
-  internalRuntype,
+  setupInternalRuntype,
   isFail,
   propagateFail,
   Runtype,
 } from './runtype'
 
-const stringRuntype = internalRuntype<string>((v, failOrThrow) => {
+const stringRuntype = setupInternalRuntype<string>((v, failOrThrow) => {
   if (typeof v === 'string') {
     return v
   }
@@ -39,7 +39,7 @@ export function string(options?: {
 
   const isPure = !trim // trim modifies the string
 
-  return internalRuntype((v, failOrThrow) => {
+  return setupInternalRuntype((v, failOrThrow) => {
     const s: string = (stringRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(s)) {

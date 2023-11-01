@@ -1,4 +1,44 @@
 /**
+ * Runtype
+ *
+ * Just a function. The returned value may be a copy of v, depending on the
+ * runtypes implementation.
+ */
+export interface Runtype<T> {
+  /**
+   * A function to check that v 'conforms' to type T
+   *
+   * By default, Raises a RuntypeError if the check fails.
+   * With `useRuntype(runtype, value)` it will return a `ValidationResult` instead.
+   */
+  (v: unknown): T
+}
+
+/**
+ * Helper for use in record definitions to mark optional keys.
+ */
+export interface OptionalRuntype<T> {
+  isOptionalRuntype: true
+  (v: unknown): T
+}
+
+/**
+ * Helper to build record types with optionals
+ */
+export type Unpack<T> = T extends Runtype<infer U>
+  ? U
+  : T extends OptionalRuntype<infer V>
+  ? V
+  : never
+
+/**
+ * Helper to Force Typescript to boil down complex types to a plain interface
+ */
+export type Collapse<T> = T extends infer U ? { [K in keyof U]: U[K] } : never
+
+/**
+ * Error with additional information
+ *
  * Thrown if the input does not match the runtype.
  *
  * Use `getFormattedErrorPath`, `getFormattedErrorValue` and
@@ -22,7 +62,7 @@ export class RuntypeError extends Error {
 }
 
 /**
- * Thrown if the api is misused.
+ * Thrown if the api is misused
  */
 export class RuntypeUsageError extends Error {}
 
@@ -44,7 +84,9 @@ export interface Fail {
   value?: any
 }
 
-// create a fail or raise the error exception if the called runtype was on top
+/**
+ * Create a fail or raise the error exception if the called runtype was on top
+ */
 export function createFail(
   failOrThrow: typeof failSymbol | undefined,
   msg: string,
@@ -72,25 +114,30 @@ export function createFail(
   }
 }
 
-// pass the fail up to the caller or, if on top, raise the error exception
+/**
+ * Pass the fail up to the caller or, if on top, raise the error exception
+ */
 export function propagateFail(
   failOrThrow: typeof failSymbol | undefined,
   failObj: Fail,
   topLevelValue?: unknown,
   key?: string | number,
 ): Fail {
+  // while unwinding the stack, add path information
   if (key !== undefined) {
     failObj.path.push(key)
   }
 
   if (failOrThrow === undefined) {
-    // runtype check failed
+    // toplevel runtype invocation: throw
     throw new RuntypeError(failObj.reason, topLevelValue, failObj.path)
   } else if (failOrThrow === failSymbol) {
+    // either non-throw invocation or not at the toplevel
     return failObj
   } else {
+    // some passed an invalid second argument to the runtype
     throw new RuntypeUsageError(
-      `failOrThrow must be undefined or the failSymbol, not ${JSON.stringify(
+      `do not pass a second argument to a runtype - failOrThrow must be undefined or the failSymbol, not ${JSON.stringify(
         failOrThrow,
       )}`,
     )
@@ -98,83 +145,7 @@ export function propagateFail(
 }
 
 /**
- * Runtype
- *
- * Just a function. The returned value may be a copy of v, depending on the
- * runtypes implementation.
- */
-export interface Runtype<T> {
-  /**
-   * A function to check that v 'conforms' to type T
-   *
-   * By default, Raises a RuntypeError if the check fails.
-   * With `useRuntype(runtype, value)` it will return a `ValidationResult` instead.
-   */
-  (v: unknown): T
-}
-
-/**
- * Special runtype for use in record definitions to mark optional keys.
- */
-export interface OptionalRuntype<T> {
-  isOptionalRuntype: true
-  (v: unknown): T
-}
-
-export type Unpack<T> = T extends Runtype<infer U>
-  ? U
-  : T extends OptionalRuntype<infer V>
-  ? V
-  : never
-
-// force Typescript to boil down complex mapped types to a plain interface
-export type Collapse<T> = T extends infer U ? { [K in keyof U]: U[K] } : never
-
-export const isPureRuntypeSymbol = Symbol('isPure')
-
-// The internal runtype is one that receives an additional flag that
-// determines whether the runtype should throw a RuntypeError or whether it
-// should return a Fail up to the caller.
-//
-// Use this to:
-//   * accumulate additional path data when unwinding a fail (propagateFail)
-//   * have runtypes return a dedicated fail value to implement union over any
-//     runtypes (isFail)
-//
-// Pass `true` as isPure to signal that this runtype is not modifying its
-// value (checked with `isPureRuntype`
-export function internalRuntype<T>(
-  fn: (v: unknown, failOrThrow?: typeof failSymbol) => T,
-  isPure?: boolean,
-): Runtype<T> {
-  if (isPure === true) {
-    return Object.assign(fn, { isPure: isPureRuntypeSymbol })
-  } else if (isPure === undefined || isPure === false) {
-    return fn
-  } else {
-    throw new RuntypeUsageError(
-      'expected "isPure" or undefined as the second argument',
-    )
-  }
-}
-
-/**
- * A pure runtype does not change its value.
- *
- * A non-pure runtype may return a changed value.
- * This is used to get rid of redundant object copying
- */
-export function isPureRuntype(fn: Runtype<any>): boolean {
-  return !!(fn as any).isPure
-}
-
-export type InternalRuntype = (
-  v: unknown,
-  failOrThrow: typeof failSymbol | undefined,
-) => any
-
-/**
- * Check whether a returned value is a failure.
+ * Check whether a returned value is a failure
  */
 export function isFail(v: unknown): v is Fail {
   if (typeof v !== 'object' || !v) {
@@ -184,8 +155,70 @@ export function isFail(v: unknown): v is Fail {
   return (v as any)[failSymbol]
 }
 
-export function isNonStrictRuntype(fn: Runtype<any>): boolean {
-  return !!(fn as any).isNonStrict
+/**
+ * Internals of a runtype.
+ *
+ * Used to implement combinators (pick, omit, intersection, ...) and
+ * optimizations.
+ */
+export interface RuntypeMetadata {
+  // fields of a record runtype
+  // Used by combinators to build new records.
+  fields?: Record<string, Runtype<any>>
+
+  // true if the record runtype ignores additional fields
+  // Used by combinators to preserve non-strictness.
+  isNonStrict?: boolean
+
+  // true if the runtype (after the check) does return the passed value as-is.
+  // Nested pure runtypes can save allocations by just passing the value back
+  // after a successful check. Impure runtypes must always copy its values to
+  // be safe.
+  // Container runtypes made of impure elements must also copy the whole
+  // container.
+  isPure: boolean
+
+  // the elements of a union runtype, used to implement distribution of union
+  // intersections
+  unions?: Runtype<any>[]
 }
 
-export const isNonStrictRuntypeSymbol = Symbol('isNonStrict')
+/**
+ * The internal runtype is one that receives an additional flag that
+ * determines whether the runtype should throw a RuntypeError or whether it
+ * should return a Fail up to the caller.
+ *
+ * Use this to:
+ *   * accumulate additional path data when unwinding a fail (propagateFail)
+ *   * have runtypes return a dedicated fail value to implement union over any
+ *     runtypes (isFail)
+ */
+export interface InternalRuntype<T> {
+  (v: unknown, failOrThrow?: typeof failSymbol): T | Fail
+  meta?: RuntypeMetadata
+}
+
+export type InternalRuntypeOf<T> = T extends Runtype<infer X>
+  ? InternalRuntype<X>
+  : never
+
+/**
+ * Setup the internal runtype with metadata.
+ */
+export function setupInternalRuntype<T>(
+  fn: InternalRuntype<T>,
+  meta: RuntypeMetadata,
+): Runtype<T> {
+  if (!meta) {
+    return fn as Runtype<T>
+  }
+
+  return Object.assign(fn, { meta }) as Runtype<T>
+}
+
+/**
+ * Return an internal runtype.
+ */
+export function getInternalRuntype<T>(rt: Runtype<T>): InternalRuntype<T> {
+  return rt as InternalRuntype<T>
+}

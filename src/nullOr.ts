@@ -1,6 +1,6 @@
 import {
   InternalRuntype,
-  internalRuntype,
+  setupInternalRuntype,
   isPureRuntype,
   Runtype,
 } from './runtype'
@@ -11,7 +11,7 @@ import {
 export function nullOr<A>(t: Runtype<A>): Runtype<A | null> {
   const isPure = isPureRuntype(t)
 
-  return internalRuntype((v, failOrThrow) => {
+  return setupInternalRuntype((v, failOrThrow) => {
     if (v === null) {
       return null
     }

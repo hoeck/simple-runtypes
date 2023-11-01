@@ -5,7 +5,7 @@ import {
   Fail,
   failSymbol,
   InternalRuntype,
-  internalRuntype,
+  setupInternalRuntype,
   isFail,
   isPureRuntype,
   propagateFail,
@@ -58,7 +58,7 @@ function internalDiscriminatedUnion(
 
   const isPure = runtypes.every((t) => isPureRuntype(t))
 
-  const resultingRuntype = internalRuntype((v, failOrThrow) => {
+  const resultingRuntype = setupInternalRuntype((v, failOrThrow) => {
     const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(o)) {
@@ -165,7 +165,7 @@ export function union<V extends Runtype<any>[]>(
 
   // simple union validation: try all runtypes and use the first one that
   // doesn't fail
-  return internalRuntype((v, failOrThrow) => {
+  return setupInternalRuntype((v, failOrThrow) => {
     let lastFail: Fail | undefined
 
     for (let i = 0; i < runtypes.length; i++) {

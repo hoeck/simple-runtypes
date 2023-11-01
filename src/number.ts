@@ -1,4 +1,4 @@
-import { createFail, internalRuntype, Runtype } from './runtype'
+import { createFail, setupInternalRuntype, Runtype } from './runtype'
 
 /**
  * A number. By default reject NaN and Infinity values.
@@ -18,7 +18,7 @@ export function number(options?: {
 }): Runtype<number> {
   const { allowNaN, allowInfinity, min, max } = options || {}
 
-  return internalRuntype<number>((v, failOrThrow) => {
+  return setupInternalRuntype<number>((v, failOrThrow) => {
     if (typeof v !== 'number') {
       return createFail(failOrThrow, 'expected a number', v)
     }

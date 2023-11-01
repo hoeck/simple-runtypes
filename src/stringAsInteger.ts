@@ -3,13 +3,13 @@ import {
   createFail,
   failSymbol,
   InternalRuntype,
-  internalRuntype,
+  setupInternalRuntype,
   isFail,
   propagateFail,
   Runtype,
 } from './runtype'
 
-export const stringAsIntegerRuntype = internalRuntype<number>(
+export const stringAsIntegerRuntype = setupInternalRuntype<number>(
   (v, failOrThrow) => {
     if (typeof v === 'string') {
       const parsedNumber = parseInt(v, 10)
@@ -69,7 +69,7 @@ export function stringAsInteger(options?: {
 
   const { min, max } = options
 
-  return internalRuntype<number>((v, failOrThrow) => {
+  return setupInternalRuntype<number>((v, failOrThrow) => {
     const n = (stringAsIntegerRuntype as InternalRuntype)(v, failOrThrow)
 
     if (isFail(n)) {
