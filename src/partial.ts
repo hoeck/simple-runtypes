@@ -1,6 +1,6 @@
 import { optional } from './optional'
 import { internalRecord } from './record'
-import { Runtype, RuntypeUsageError, isNonStrictRuntype } from './runtype'
+import { InternalRuntype, Runtype, RuntypeUsageError } from './runtype'
 
 /**
  * Build a new record runtype that marks all keys as optional.
@@ -10,7 +10,8 @@ import { Runtype, RuntypeUsageError, isNonStrictRuntype } from './runtype'
 export function partial<T, K extends keyof T>(
   original: Runtype<T>,
 ): Runtype<Partial<T>> {
-  const fields = (original as any).fields
+  const fields = (original as InternalRuntype<any>).meta?.fields
+  const isNonStrict = (original as InternalRuntype<any>).meta?.isNonStrict
 
   if (!fields) {
     throw new RuntypeUsageError(`expected a record runtype`)
@@ -26,8 +27,5 @@ export function partial<T, K extends keyof T>(
     }
   }
 
-  return internalRecord(
-    newRecordFields,
-    isNonStrictRuntype(original),
-  ) as Runtype<any>
+  return internalRecord(newRecordFields, isNonStrict)
 }

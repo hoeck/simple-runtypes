@@ -1,26 +1,23 @@
 import {
+  Collapse,
   createFail,
   failSymbol,
+  getRuntypeMetadata,
   InternalRuntype,
-  internalRuntype,
   isFail,
-  isPureRuntype,
+  OptionalRuntype,
   propagateFail,
   Runtype,
-  OptionalRuntype,
-  Collapse,
+  setupInternalRuntype,
   Unpack,
-  isNonStrictRuntypeSymbol,
 } from './runtype'
 import { debugValue } from './runtypeError'
 
-function isPureTypemap(typemap: object) {
-  for (const k in typemap) {
-    if (!Object.prototype.hasOwnProperty.call(typemap, k)) {
-      continue
-    }
+function isPureTypemap(typemapValues: (Runtype<any> | OptionalRuntype<any>)[]) {
+  for (let i = 0; i < typemapValues.length; i++) {
+    const m = getRuntypeMetadata(typemapValues[i])
 
-    if (!isPureRuntype(typemap[k as keyof typeof typemap])) {
+    if (!m.isPure) {
       return false
     }
   }
@@ -32,101 +29,78 @@ export function internalRecord(
   typemap: {
     [key: string]: Runtype<any> | OptionalRuntype<any>
   },
-  isNonStrict = false,
+  isNonStrict?: boolean,
 ): Runtype<any> {
-  // a nonStrict record may ignore keys and so cannot be pure
-  const isPure = !isNonStrict && isPureTypemap(typemap)
-
   // cache typemap in arrays for a faster loop
   const typemapKeys = [...Object.keys(typemap)]
-  const typemapValues = [...Object.values(typemap)]
+  const typemapValues = [...Object.values(typemap)] as InternalRuntype<any>[]
 
-  const rt = internalRuntype((v, failOrThrow) => {
-    // inlined object runtype for perf
-    if (typeof v !== 'object' || Array.isArray(v) || v === null) {
-      return createFail(failOrThrow, 'expected an object', v)
-    }
+  // a nonStrict record may ignore keys and so cannot be pure
+  const isPure = !isNonStrict && isPureTypemap(typemapValues)
 
-    const o: any = v
+  return setupInternalRuntype(
+    (v, failOrThrow) => {
+      // inlined object runtype for perf
+      if (typeof v !== 'object' || Array.isArray(v) || v === null) {
+        return createFail(failOrThrow, 'expected an object', v)
+      }
 
-    // optimize allocations: only create a copy if the record is impure
-    const res = isPure ? o : {}
+      const o: any = v
 
-    for (let i = 0; i < typemapKeys.length; i++) {
-      const k = typemapKeys[i]
-      const t = typemapValues[i] as InternalRuntype
+      // optimize allocations: only create a copy if the record is impure
+      const res = isPure ? o : {}
 
-      // nested types should always fail with explicit `Fail` so we can add additional data
-      const value = t(o[k], failSymbol)
+      for (let i = 0; i < typemapKeys.length; i++) {
+        const k = typemapKeys[i]
+        const t = typemapValues[i] as InternalRuntype<any>
 
-      if (isFail(value)) {
-        if (!(k in o)) {
-          // rt failed because o[k] was undefined bc. the key was missing from o
-          // use a more specific error message in this case
+        // nested types should always fail with explicit `Fail` so we can add additional data
+        const value = t(o[k], failSymbol)
+
+        if (isFail(value)) {
+          if (!(k in o)) {
+            // rt failed because o[k] was undefined bc. the key was missing from o
+            // use a more specific error message in this case
+            return createFail(
+              failOrThrow,
+              `missing key in record: ${debugValue(k)}`,
+            )
+          }
+
+          return propagateFail(failOrThrow, value, v, k)
+        }
+
+        if (!isPure) {
+          res[k] = value
+        }
+      }
+
+      if (!isNonStrict) {
+        const unknownKeys: string[] = []
+
+        for (const k in o) {
+          if (!Object.prototype.hasOwnProperty.call(typemap, k)) {
+            unknownKeys.push(k)
+          }
+        }
+
+        if (unknownKeys.length) {
           return createFail(
             failOrThrow,
-            `missing key in record: ${debugValue(k)}`,
+            `invalid keys in record: ${debugValue(unknownKeys)}`,
+            v,
           )
         }
-
-        return propagateFail(failOrThrow, value, v, k)
       }
 
-      if (!isPure) {
-        res[k] = value
-      }
-    }
-
-    if (!isNonStrict) {
-      const unknownKeys: string[] = []
-
-      for (const k in o) {
-        if (!Object.prototype.hasOwnProperty.call(typemap, k)) {
-          unknownKeys.push(k)
-        }
-      }
-
-      if (unknownKeys.length) {
-        return createFail(
-          failOrThrow,
-          `invalid keys in record: ${debugValue(unknownKeys)}`,
-          v,
-        )
-      }
-    }
-
-    return res
-  }, isPure)
-
-  // fields metadata to implement combinators like (discriminated) unions,
-  // pick, omit and intersection
-  const fields: { [key: string]: any } = {}
-
-  for (const k in typemap) {
-    fields[k] = typemap[k]
-  }
-
-  // eslint-disable-next-line no-extra-semi
-  ;(rt as any).fields = fields
-
-  if (isNonStrict) {
-    // eslint-disable-next-line no-extra-semi
-    ;(rt as any).isNonStrict = isNonStrictRuntypeSymbol
-  }
-
-  return rt
-}
-
-export function getRecordFields(
-  r: Runtype<any>,
-): { [key: string]: Runtype<any> } | undefined {
-  const anyRt: any = r
-
-  if (!anyRt.fields) {
-    return
-  }
-
-  return anyRt.fields
+      return res
+    },
+    {
+      isPure,
+      fields: typemap,
+      isNonStrict,
+    },
+  )
 }
 
 /**

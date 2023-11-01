@@ -1,5 +1,4 @@
 import * as st from '../src'
-import { isPureRuntypeSymbol } from '../src/runtype'
 
 // re-export so tests don't depend on the weird src directory
 export * as st from '../src'
@@ -35,7 +34,7 @@ export function expectAcceptValuesPure<T>(
   rt: st.Runtype<T>,
   values: unknown[],
 ): void {
-  expect(rt).toHaveProperty('isPure', isPureRuntypeSymbol)
+  expect(rt).toHaveProperty('meta', expect.objectContaining({ isPure: true }))
 
   values.forEach((v) => {
     const result = st.use(rt, v)

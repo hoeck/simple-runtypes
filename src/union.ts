@@ -1,13 +1,11 @@
 import { objectRuntype } from './object'
-import { getRecordFields } from './record'
 import {
   createFail,
   Fail,
   failSymbol,
   InternalRuntype,
-  internalRuntype,
+  setupInternalRuntype,
   isFail,
-  isPureRuntype,
   propagateFail,
   Runtype,
   RuntypeUsageError,
@@ -22,14 +20,14 @@ import { debugValue } from './runtypeError'
 // runtype check vs man in the naive union check implementation.
 function internalDiscriminatedUnion(
   key: string,
-  runtypes: Runtype<any>[],
-): Runtype<any> {
-  const typeMap = new Map<string | number | boolean, Runtype<any>>()
+  runtypes: InternalRuntype<any>[],
+): InternalRuntype<any> {
+  const typeMap = new Map<string | number | boolean, InternalRuntype<any>>()
 
   // build an index for fast runtype lookups by literal
-  runtypes.forEach((t: any) => {
-    const rt = t.fields[key]
-    const tagValue = rt.literal
+  runtypes.forEach((t) => {
+    const rt = t.meta?.fields?.[key]
+    const tagValue = rt?.meta?.literal
 
     if (tagValue === undefined) {
       throw new RuntypeUsageError(
@@ -56,48 +54,46 @@ function internalDiscriminatedUnion(
     typeMap.set(tagValue, t)
   })
 
-  const isPure = runtypes.every((t) => isPureRuntype(t))
+  const isPure = runtypes.every((t) => t.meta?.isPure)
 
-  const resultingRuntype = internalRuntype((v, failOrThrow) => {
-    const o: any = (objectRuntype as InternalRuntype)(v, failOrThrow)
+  return setupInternalRuntype(
+    (v, failOrThrow) => {
+      const o: any = (objectRuntype as InternalRuntype<any>)(v, failOrThrow)
 
-    if (isFail(o)) {
-      return propagateFail(failOrThrow, o, v)
-    }
+      if (isFail(o)) {
+        return propagateFail(failOrThrow, o, v)
+      }
 
-    const tagValue = o[key]
-    const rt = typeMap.get(tagValue)
+      const tagValue = o[key]
+      const rt = typeMap.get(tagValue)
 
-    if (rt === undefined) {
-      return createFail(
-        failOrThrow,
-        `no Runtype found for discriminated union tag ${key}: ${debugValue(
-          tagValue,
-        )}`,
-        v,
-      )
-    }
+      if (rt === undefined) {
+        return createFail(
+          failOrThrow,
+          `no Runtype found for discriminated union tag ${key}: ${debugValue(
+            tagValue,
+          )}`,
+          v,
+        )
+      }
 
-    return (rt as InternalRuntype)(v, failOrThrow)
-  }, isPure)
-
-  // keep the union runtypes around to implement combinators that need to distribute across unions like intersection
-  ;(resultingRuntype as any).unions = runtypes
-
-  return resultingRuntype
+      return rt(v, failOrThrow)
+    },
+    { isPure, unions: runtypes },
+  )
 }
 
 // given a list of runtypes, return the name of the key that acts as the
 // unique discriminating value across all runtypes
 // return undefined if no such key exists
 function findDiscriminatingUnionKey(
-  runtypes: Runtype<any>[],
+  runtypes: InternalRuntype<any>[],
 ): string | undefined {
   const commonKeys = new Map<string, Set<string>>()
 
   for (let i = 0; i < runtypes.length; i++) {
     const r = runtypes[i]
-    const fields = getRecordFields(r)
+    const fields = r.meta?.fields
 
     if (!fields) {
       // not a record runtype -> no common tag key
@@ -161,23 +157,26 @@ export function union<V extends Runtype<any>[]>(
     return internalDiscriminatedUnion(commonKey, runtypes)
   }
 
-  const isPure = runtypes.every((t) => isPureRuntype(t))
+  const isPure = runtypes.every((t: InternalRuntype<any>) => t.meta?.isPure)
 
   // simple union validation: try all runtypes and use the first one that
   // doesn't fail
-  return internalRuntype((v, failOrThrow) => {
-    let lastFail: Fail | undefined
+  return setupInternalRuntype(
+    (v, failOrThrow) => {
+      let lastFail: Fail | undefined
 
-    for (let i = 0; i < runtypes.length; i++) {
-      const val = (runtypes[i] as InternalRuntype)(v, failSymbol)
+      for (let i = 0; i < runtypes.length; i++) {
+        const val = (runtypes[i] as InternalRuntype<any>)(v, failSymbol)
 
-      if (!isFail(val)) {
-        return val
-      } else {
-        lastFail = val
+        if (!isFail(val)) {
+          return val
+        } else {
+          lastFail = val
+        }
       }
-    }
 
-    return propagateFail(failOrThrow, lastFail as any, v)
-  }, isPure)
+      return propagateFail(failOrThrow, lastFail as any, v)
+    },
+    { isPure, unions: runtypes },
+  )
 }

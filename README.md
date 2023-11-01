@@ -16,17 +16,17 @@ That's how runtypes work.
 - [Why?](#why)
 - [Benchmarks](#benchmarks)
 - [Documentation](#documentation)
-  * [Intro](#intro)
-  * [Usage Examples](#usage-examples)
-    + [Nesting](#nesting)
-    + [Strict Property Checks](#strict-property-checks)
-    + [Ignore Individual Properties](#ignore-individual-properties)
-    + [Optional Properties](#optional-properties)
-    + [Non-strict Property Checks](#non-strict-property-checks)
-    + [Discriminating Unions](#discriminating-unions)
-    + [Custom Runtypes](#custom-runtypes)
-  * [Reference](#reference)
-  * [Roadmap / Todos](#roadmap--todos)
+  - [Intro](#intro)
+  - [Usage Examples](#usage-examples)
+    - [Nesting](#nesting)
+    - [Strict Property Checks](#strict-property-checks)
+    - [Ignore Individual Properties](#ignore-individual-properties)
+    - [Optional Properties](#optional-properties)
+    - [Non-strict Property Checks](#non-strict-property-checks)
+    - [Discriminating Unions](#discriminating-unions)
+    - [Custom Runtypes](#custom-runtypes)
+  - [Reference](#reference)
+  - [Roadmap / Todos](#roadmap--todos)
 
 <!-- tocstop -->
 
@@ -212,7 +212,7 @@ const networkSuccessState = st.record({
     title: st.string(),
     duration: st.number(),
     summary: st.string(),
-  })
+  }),
 })
 
 const networdStateRuntype = st.union(
@@ -237,14 +237,14 @@ const bigIntRuntype = st.runtype((v) => {
   const stringCheck = st.use(bigIntStringRuntype, v)
 
   if (!stringCheck.ok) {
-      return stringCheck.error
+    return stringCheck.error
   }
 
   return BigInt(stringCheck.result.slice(0, -1))
 })
 
-bigIntRuntype("123n") // => 123n
-bigIntRuntype("2.2") // => error: "expected string to match ..."
+bigIntRuntype('123n') // => 123n
+bigIntRuntype('2.2') // => error: "expected string to match ..."
 ```
 
 ### Reference
@@ -298,13 +298,21 @@ Shortcuts:
   on all types that [`literal`](src/literal.ts#L10) accepts
 - rename record to object: [#69](https://github.com/hoeck/simple-runtypes/issues/69)
 - improve docs:
-  - *preface*: what is a runtype and why is it useful
-  - *why*: explain or link to example that shows "strict by default"
+  - _preface_: what is a runtype and why is it useful
+  - _why_: explain or link to example that shows "strict by default"
   - show that `simple-runtypes` is feature complete because it can
     1. express all TypeScript types
     2. is extendable with custom runtypes (add documentation)
   - add small frontend and backend example projects that show how to use `simple-runtypes` in production
-- test *all* types with [tsd](https://github.com/SamVerschueren/tsd)
+- test _all_ types with [tsd](https://github.com/SamVerschueren/tsd)
 - add more combinators: partial, required, get, ...
 - separate [`Runtype`](src/runtype.ts#L106) and [`InternalRuntype`](src/runtype.ts#L171) and type runtype internals
   (see [this comment](https://github.com/hoeck/simple-runtypes/pull/73#discussion_r948841977))
+
+#### current tasks (metadata) notes
+
+- check that intersection & union tests do properly test the distribution stuff
+- make getMetadata public
+- maybe make metadata typed and include all options so that you can walk the tree to create testdata orjson-schemas from types
+- maybe add a `serialize` function to each runtype too? to use instead of JSON.stringify and to provide a full-service library?
+- maybe make `any` a forbidden type of a runtype

@@ -1,19 +1,22 @@
 import {
   createFail,
   InternalRuntype,
-  internalRuntype,
   isFail,
   propagateFail,
   Runtype,
+  setupInternalRuntype,
 } from './runtype'
 
-const stringRuntype = internalRuntype<string>((v, failOrThrow) => {
-  if (typeof v === 'string') {
-    return v
-  }
+const stringRuntype = setupInternalRuntype<string>(
+  (v, failOrThrow) => {
+    if (typeof v === 'string') {
+      return v
+    }
 
-  return createFail(failOrThrow, 'expected a string', v)
-}, true)
+    return createFail(failOrThrow, 'expected a string', v)
+  },
+  { isPure: true },
+)
 
 /**
  * A string.
@@ -39,33 +42,40 @@ export function string(options?: {
 
   const isPure = !trim // trim modifies the string
 
-  return internalRuntype((v, failOrThrow) => {
-    const s: string = (stringRuntype as InternalRuntype)(v, failOrThrow)
+  return setupInternalRuntype(
+    (v, failOrThrow) => {
+      const s: string = (stringRuntype as InternalRuntype<any>)(v, failOrThrow)
 
-    if (isFail(s)) {
-      return propagateFail(failOrThrow, s, v)
-    }
+      if (isFail(s)) {
+        return propagateFail(failOrThrow, s, v)
+      }
 
-    if (minLength !== undefined && s.length < minLength) {
-      return createFail(
-        failOrThrow,
-        `expected the string length to be at least ${minLength}`,
-        v,
-      )
-    }
+      if (minLength !== undefined && s.length < minLength) {
+        return createFail(
+          failOrThrow,
+          `expected the string length to be at least ${minLength}`,
+          v,
+        )
+      }
 
-    if (maxLength !== undefined && s.length > maxLength) {
-      return createFail(
-        failOrThrow,
-        `expected the string length to not exceed ${maxLength}`,
-        v,
-      )
-    }
+      if (maxLength !== undefined && s.length > maxLength) {
+        return createFail(
+          failOrThrow,
+          `expected the string length to not exceed ${maxLength}`,
+          v,
+        )
+      }
 
-    if (match !== undefined && !match.test(s)) {
-      return createFail(failOrThrow, `expected the string to match ${match}`, v)
-    }
+      if (match !== undefined && !match.test(s)) {
+        return createFail(
+          failOrThrow,
+          `expected the string to match ${match}`,
+          v,
+        )
+      }
 
-    return trim ? s.trim() : s
-  }, isPure)
+      return trim ? s.trim() : s
+    },
+    { isPure },
+  )
 }

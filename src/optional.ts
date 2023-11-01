@@ -1,9 +1,8 @@
 import {
-  InternalRuntype,
-  internalRuntype,
-  isPureRuntype,
+  getInternalRuntype,
   OptionalRuntype,
   Runtype,
+  setupInternalRuntype,
 } from './runtype'
 
 /**
@@ -16,15 +15,16 @@ import {
  *    => {foo?: string}
  */
 export function optional<A>(t: Runtype<A>): OptionalRuntype<A> {
-  const isPure = isPureRuntype(t)
+  const ti = getInternalRuntype(t)
 
-  const rt = internalRuntype((v, failOrThrow) => {
-    if (v === undefined) {
-      return undefined
-    }
+  return setupInternalRuntype(
+    (v, failOrThrow) => {
+      if (v === undefined) {
+        return undefined
+      }
 
-    return (t as InternalRuntype)(v, failOrThrow)
-  }, isPure) as OptionalRuntype<A>
-
-  return rt
+      return ti(v, failOrThrow)
+    },
+    { isPure: ti.meta?.isPure },
+  ) as OptionalRuntype<A>
 }

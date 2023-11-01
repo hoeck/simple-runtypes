@@ -1,5 +1,5 @@
 import { internalRecord } from './record'
-import { Runtype, RuntypeUsageError, isNonStrictRuntype } from './runtype'
+import { InternalRuntype, Runtype, RuntypeUsageError } from './runtype'
 
 /**
  * Build a new record runtype that omits some keys from the original.
@@ -9,7 +9,8 @@ export function omit<T, K extends keyof T>(
   original: Runtype<T>,
   ...keys: K[]
 ): Runtype<Omit<T, K>> {
-  const fields = (original as any).fields
+  const fields = (original as InternalRuntype<any>).meta?.fields
+  const isNonStrict = (original as InternalRuntype<any>).meta?.isNonStrict
 
   if (!fields) {
     throw new RuntypeUsageError(`expected a record runtype`)
@@ -21,8 +22,5 @@ export function omit<T, K extends keyof T>(
     delete newRecordFields[k]
   })
 
-  return internalRecord(
-    newRecordFields,
-    isNonStrictRuntype(original),
-  ) as Runtype<any>
+  return internalRecord(newRecordFields, isNonStrict)
 }

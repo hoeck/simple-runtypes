@@ -2,13 +2,11 @@ import {
   createFail,
   failSymbol,
   InternalRuntype,
-  internalRuntype,
+  setupInternalRuntype,
   isFail,
-  isPureRuntype,
   propagateFail,
   Runtype,
 } from './runtype'
-
 import { arrayRuntype } from './array'
 
 // TODO: find a simple (not type-computationally expensive) generic tuple definition.
@@ -40,37 +38,41 @@ export function tuple<A, B, C, D, E>(
   e: Runtype<E>,
 ): Runtype<[A, B, C, D, E]>
 export function tuple(...types: Runtype<any>[]): Runtype<any> {
-  const isPure = types.every((t) => isPureRuntype(t))
+  const itypes = types as InternalRuntype<any>[]
+  const isPure = itypes.every((t) => t.meta?.isPure)
 
-  return internalRuntype<any>((v, failOrThrow) => {
-    const a = (arrayRuntype as InternalRuntype)(v, failOrThrow)
+  return setupInternalRuntype<any>(
+    (v, failOrThrow) => {
+      const a = (arrayRuntype as InternalRuntype<any>)(v, failOrThrow)
 
-    if (isFail(a)) {
-      return propagateFail(failOrThrow, a, v)
-    }
-
-    if (a.length !== types.length) {
-      return createFail(
-        failOrThrow,
-        'tuple array does not have the required length',
-        v,
-      )
-    }
-
-    const res: any[] = isPure ? a : new Array(a.length)
-
-    for (let i = 0; i < types.length; i++) {
-      const item = (types[i] as InternalRuntype)(a[i], failSymbol)
-
-      if (isFail(item)) {
-        return propagateFail(failOrThrow, item, v, i)
+      if (isFail(a)) {
+        return propagateFail(failOrThrow, a, v)
       }
 
-      if (!isPure) {
-        res[i] = item
+      if (a.length !== types.length) {
+        return createFail(
+          failOrThrow,
+          'tuple array does not have the required length',
+          v,
+        )
       }
-    }
 
-    return res
-  }, isPure)
+      const res: any[] = isPure ? a : new Array(a.length)
+
+      for (let i = 0; i < types.length; i++) {
+        const item = itypes[i](a[i], failSymbol)
+
+        if (isFail(item)) {
+          return propagateFail(failOrThrow, item, v, i)
+        }
+
+        if (!isPure) {
+          res[i] = item
+        }
+      }
+
+      return res
+    },
+    { isPure },
+  )
 }

@@ -1,5 +1,5 @@
 import { internalRecord } from './record'
-import { Runtype, RuntypeUsageError } from './runtype'
+import { InternalRuntype, Runtype, RuntypeUsageError } from './runtype'
 
 /**
  * Build a non-strict `record` runtype from the provided `record` runtype.
@@ -14,7 +14,7 @@ import { Runtype, RuntypeUsageError } from './runtype'
  * to a nested typemap, `nonStrict` needs to be used at each level of the typemap.
  */
 export function nonStrict<T>(original: Runtype<T>): Runtype<T> {
-  const fields = (original as any).fields
+  const fields = (original as InternalRuntype<any>).meta?.fields
 
   if (!fields) {
     throw new RuntypeUsageError('expected a record runtype')

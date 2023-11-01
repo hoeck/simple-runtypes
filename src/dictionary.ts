@@ -1,81 +1,84 @@
 import { objectRuntype } from './object'
 import {
   createFail,
-  internalRuntype,
+  setupInternalRuntype,
   isFail,
-  isPureRuntype,
   propagateFail,
+  getInternalRuntype,
+  InternalRuntypeOf,
 } from './runtype'
 import { debugValue } from './runtypeError'
 import type { Runtype, InternalRuntype, Fail } from './runtype'
+
+const internalObjectRuntype: InternalRuntypeOf<typeof objectRuntype> = objectRuntype
 
 function dictionaryRuntype<T extends string, U>(
   keyRuntype: Runtype<T>,
   valueRuntype: Runtype<U>,
 ) {
-  const isPure = isPureRuntype(keyRuntype) && isPureRuntype(valueRuntype)
+  const keyRt: InternalRuntypeOf<typeof keyRuntype> = keyRuntype
+  const valueRt: InternalRuntypeOf<typeof valueRuntype> = valueRuntype
 
-  return internalRuntype<Record<T, U>>((v, failOrThrow) => {
-    const o: object | Fail = (objectRuntype as InternalRuntype)(v, failOrThrow)
+  const isPure = !!(keyRt.meta?.isPure && valueRt.meta?.isPure)
 
-    if (isFail(o)) {
-      return propagateFail(failOrThrow, o, v)
-    }
+  return setupInternalRuntype<Record<T, U>>(
+    (v, failOrThrow) => {
+      const o = internalObjectRuntype(v, failOrThrow)
 
-    if (Object.getOwnPropertySymbols(o).length) {
-      return createFail(
-        failOrThrow,
-        `invalid key in dictionary: ${debugValue(
-          Object.getOwnPropertySymbols(o),
-        )}`,
-        v,
-      )
-    }
-
-    // optimize allocations: only create a copy if any of the key runtypes
-    // return a different object - otherwise return value as is
-    const res = (isPure ? o : {}) as { [key: string]: U }
-
-    for (const key in o) {
-      if (!Object.prototype.hasOwnProperty.call(o, key)) {
-        continue
+      if (isFail(o)) {
+        return propagateFail(failOrThrow, o, v)
       }
 
-      if (key === '__proto__') {
-        // e.g. someone tried to sneak __proto__ into this object and that
-        // will cause havoc when assigning it to a new object (in case its impure)
+      if (Object.getOwnPropertySymbols(o).length) {
         return createFail(
           failOrThrow,
-          `invalid key in dictionary: ${debugValue(key)}`,
+          `invalid key in dictionary: ${debugValue(
+            Object.getOwnPropertySymbols(o),
+          )}`,
           v,
         )
       }
-      const keyOrFail: T | Fail = (keyRuntype as InternalRuntype)(
-        key,
-        failOrThrow,
-      )
 
-      if (isFail(keyOrFail)) {
-        return propagateFail(failOrThrow, keyOrFail, v)
+      // optimize allocations: only create a copy if any of the key runtypes
+      // return a different object - otherwise return value as is
+      const res = (isPure ? o : {}) as { [key: string]: U }
+
+      for (const key in o) {
+        if (!Object.prototype.hasOwnProperty.call(o, key)) {
+          continue
+        }
+
+        if (key === '__proto__') {
+          // e.g. someone tried to sneak __proto__ into this object and that
+          // will cause havoc when assigning it to a new object (in case its impure)
+          return createFail(
+            failOrThrow,
+            `invalid key in dictionary: ${debugValue(key)}`,
+            v,
+          )
+        }
+        const keyOrFail = keyRt(key, failOrThrow)
+
+        if (isFail(keyOrFail)) {
+          return propagateFail(failOrThrow, keyOrFail, v)
+        }
+
+        const value = o[key as keyof typeof o]
+        const valueOrFail = valueRt(value, failOrThrow)
+
+        if (isFail(valueOrFail)) {
+          return propagateFail(failOrThrow, valueOrFail, v)
+        }
+
+        if (!isPure) {
+          res[keyOrFail] = valueOrFail
+        }
       }
 
-      const value = o[key as keyof typeof o]
-      const valueOrFail: U | Fail = (valueRuntype as InternalRuntype)(
-        value,
-        failOrThrow,
-      )
-
-      if (isFail(valueOrFail)) {
-        return propagateFail(failOrThrow, valueOrFail, v)
-      }
-
-      if (!isPure) {
-        res[keyOrFail] = valueOrFail
-      }
-    }
-
-    return res
-  }, isPure)
+      return res
+    },
+    { isPure },
+  )
 }
 
 /**

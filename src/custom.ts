@@ -2,11 +2,11 @@ import {
   createFail,
   Fail,
   failSymbol,
-  internalRuntype,
-  InternalRuntype,
+  getInternalRuntype,
   isFail,
   propagateFail,
   Runtype,
+  setupInternalRuntype,
 } from './runtype'
 
 /**
@@ -20,15 +20,20 @@ export function createError(msg: string): Fail {
  * Construct a custom runtype from a validation function.
  */
 export function runtype<T>(fn: (v: unknown) => T | Fail): Runtype<T> {
-  return internalRuntype<any>((v, failOrThrow) => {
-    const res = fn(v)
+  return setupInternalRuntype<any>(
+    (v, failOrThrow) => {
+      const res = fn(v)
 
-    if (isFail(res)) {
-      return propagateFail(failOrThrow, res, v)
-    }
+      if (isFail(res)) {
+        return propagateFail(failOrThrow, res, v)
+      }
 
-    return res
-  })
+      return res
+    },
+    {
+      isPure: false,
+    },
+  )
 }
 
 /**
@@ -49,7 +54,7 @@ export type ValidationResult<T> =
  * exceptions and try-catch for error handling is of concern.
  */
 export function use<T>(r: Runtype<T>, v: unknown): ValidationResult<T> {
-  const result = (r as InternalRuntype)(v, failSymbol)
+  const result = getInternalRuntype(r)(v, failSymbol)
 
   if (isFail(result)) {
     // we don't know who is using the result (passing error up the stack or

@@ -1,10 +1,10 @@
-import { internalRuntype, Runtype } from './runtype'
+import { setupInternalRuntype, Runtype } from './runtype'
 
 /**
  * A value to ignore (typed as unknown and always set to undefined).
  */
 export function ignore(): Runtype<unknown> {
-  return internalRuntype(() => {
+  return setupInternalRuntype(() => {
     return undefined as unknown
-  }, true)
+  })
 }

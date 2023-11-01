@@ -1,19 +1,22 @@
 import {
   createFail,
   InternalRuntype,
-  internalRuntype,
   isFail,
   propagateFail,
   Runtype,
+  setupInternalRuntype,
 } from './runtype'
 
-export const integerRuntype = internalRuntype<number>((v, failOrThrow) => {
-  if (typeof v === 'number' && Number.isSafeInteger(v)) {
-    return v
-  }
+export const integerRuntype = setupInternalRuntype<number>(
+  (v, failOrThrow) => {
+    if (typeof v === 'number' && Number.isSafeInteger(v)) {
+      return v
+    }
 
-  return createFail(failOrThrow, 'expected a safe integer', v)
-}, true)
+    return createFail(failOrThrow, 'expected a safe integer', v)
+  },
+  { isPure: true },
+)
 
 /**
  * A Number that is a `isSafeInteger()`
@@ -33,21 +36,32 @@ export function integer(options?: {
 
   const { min, max } = options
 
-  return internalRuntype<number>((v, failOrThrow) => {
-    const n = (integerRuntype as InternalRuntype)(v, failOrThrow)
+  return setupInternalRuntype<number>(
+    (v, failOrThrow) => {
+      const n = (integerRuntype as InternalRuntype<number>)(v, failOrThrow)
 
-    if (isFail(n)) {
-      return propagateFail(failOrThrow, n, v)
-    }
+      if (isFail(n)) {
+        return propagateFail(failOrThrow, n, v)
+      }
 
-    if (min !== undefined && n < min) {
-      return createFail(failOrThrow, `expected the integer to be >= ${min}`, v)
-    }
+      if (min !== undefined && n < min) {
+        return createFail(
+          failOrThrow,
+          `expected the integer to be >= ${min}`,
+          v,
+        )
+      }
 
-    if (max !== undefined && n > max) {
-      return createFail(failOrThrow, `expected the integer to be <= ${max}`, v)
-    }
+      if (max !== undefined && n > max) {
+        return createFail(
+          failOrThrow,
+          `expected the integer to be <= ${max}`,
+          v,
+        )
+      }
 
-    return n
-  }, true)
+      return n
+    },
+    { isPure: true },
+  )
 }
