@@ -16,7 +16,8 @@ export function expectAcceptValuesImpure<T>(
     const [vIn, vOut] = valuesAreTuples ? (v as [unknown, unknown]) : [v, v]
     const result = st.use(rt, vIn)
 
-    expect(result).toEqual({ ok: true, result: vOut })
+    expect(result).toStrictEqual({ ok: true, result: vOut })
+
     // this identity check does not account for unmodified primitive values,
     // which are always identical to themselves; these cases are handled
     // directly in the relevant tests
@@ -39,7 +40,7 @@ export function expectAcceptValuesPure<T>(
   values.forEach((v) => {
     const result = st.use(rt, v)
 
-    expect(result).toEqual({ ok: true, result: v })
+    expect(result).toStrictEqual({ ok: true, result: v })
     expect(result.ok && result.result).toBe(v)
 
     expect(() => rt(v)).not.toThrow()

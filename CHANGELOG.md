@@ -7,6 +7,8 @@
   - replaced by `nonStrict`: `sloppyRecord(X)` -> `nonStrict(record(X))`
   - fixes [#23](https://github.com/hoeck/simple-runtypes/issues/23)
 - fix: allow literal booleans as type-discriminators in discriminated unions, see [#98](https://github.com/hoeck/simple-runtypes/issues/98)
+- fix: `string` trim & maxlength checks: https://github.com/hoeck/simple-runtypes/issues/100
+- fix: `record` optionals: https://github.com/hoeck/simple-runtypes/issues/100
 
 ### 7.1.3
 

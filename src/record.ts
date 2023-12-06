@@ -54,6 +54,14 @@ export function internalRecord(
         const k = typemapKeys[i]
         const t = typemapValues[i] as InternalRuntype<any>
 
+        // optional fields not present in the given object do not need to be
+        // checked at all
+        // this is vital to preserve the object shape of an impure record
+        // with optional fields
+        if (t.meta?.optional && !o.hasOwnProperty(k)) {
+          break
+        }
+
         // nested types should always fail with explicit `Fail` so we can add additional data
         const value = t(o[k], failSymbol)
 

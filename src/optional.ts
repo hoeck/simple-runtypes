@@ -25,6 +25,6 @@ export function optional<A>(t: Runtype<A>): OptionalRuntype<A> {
 
       return ti(v, failOrThrow)
     },
-    { isPure: ti.meta?.isPure },
+    { isPure: ti.meta?.isPure, optional: true },
   ) as OptionalRuntype<A>
 }

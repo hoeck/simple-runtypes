@@ -56,6 +56,21 @@ describe('record', () => {
     ])
   })
 
+  it('keeps optional attributes of impure records', () => {
+    const runtype = st.record({ a: st.optional(st.string({ trim: true })) })
+
+    expectAcceptValuesImpure(
+      runtype,
+      [
+        [{}, {}],
+        [{ a: '' }, { a: '' }],
+        [{ a: ' a ' }, { a: 'a' }],
+        [{ a: undefined }, { a: undefined }],
+      ],
+      true,
+    )
+  })
+
   it('accepts nested records', () => {
     const runtype = st.record({
       a: st.record({

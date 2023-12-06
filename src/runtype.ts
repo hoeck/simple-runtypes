@@ -184,6 +184,9 @@ export interface RuntypeMetadata {
 
   // literal value used to identify tagged union members
   literal?: string | boolean | number
+
+  // when true, this runtype is an optional in a record
+  optional?: boolean
 }
 
 /**
