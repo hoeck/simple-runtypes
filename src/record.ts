@@ -58,7 +58,7 @@ export function internalRecord(
         // checked at all
         // this is vital to preserve the object shape of an impure record
         // with optional fields
-        if (t.meta?.optional && !o.hasOwnProperty(k)) {
+        if (t.meta?.optional && !Object.prototype.hasOwnProperty.call(o, k)) {
           break
         }
 

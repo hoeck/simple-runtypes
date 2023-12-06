@@ -1,14 +1,13 @@
 import { objectRuntype } from './object'
 import {
   createFail,
-  setupInternalRuntype,
+  InternalRuntypeOf,
   isFail,
   propagateFail,
-  getInternalRuntype,
-  InternalRuntypeOf,
+  setupInternalRuntype,
 } from './runtype'
+import type { Runtype } from './runtype'
 import { debugValue } from './runtypeError'
-import type { Runtype, InternalRuntype, Fail } from './runtype'
 
 const internalObjectRuntype: InternalRuntypeOf<typeof objectRuntype> = objectRuntype
 
