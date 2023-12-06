@@ -118,6 +118,17 @@ describe('string', () => {
   })
 
   it('trims before applying match', () => {
-    const rt = st.string({ match: /^[0-9a-f]{8}$/ })
+    const rt = st.string({ match: /^[0-9a-f]{8}$/, trim: true })
+
+    expectAcceptValuesImpure(
+      rt,
+      [
+        [' affeaffe', 'affeaffe'],
+        [' affeaffe  ', 'affeaffe'],
+      ],
+      true,
+    )
+
+    expectRejectValues(rt, [' affea ffe ', ' '])
   })
 })
