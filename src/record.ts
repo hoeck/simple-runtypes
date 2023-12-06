@@ -128,28 +128,3 @@ export function record<
 > {
   return internalRecord(typemap as any)
 }
-
-/**
- * Like record but ignore unknown keys.
- *
- * Returns a new object that only contains the keys specified in the typemap.
- * Additional keys are ignored.
- *
- * Keeps you save from unwanted propertiers and evil __proto__ injections.
- */
-export function sloppyRecord<
-  T,
-  Typemap = { [K in keyof T]: Runtype<T[K]> | OptionalRuntype<T[K]> },
-  OptionalKeys extends keyof Typemap = {
-    [K in keyof Typemap]: Typemap[K] extends OptionalRuntype<any> ? K : never
-  }[keyof Typemap]
->(
-  typemap: Typemap,
-): Runtype<
-  Collapse<
-    { [K in Exclude<keyof Typemap, OptionalKeys>]: Unpack<Typemap[K]> } &
-      { [K in OptionalKeys]?: Unpack<Typemap[K]> }
-  >
-> {
-  return internalRecord(typemap as any, true)
-}

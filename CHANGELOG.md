@@ -3,7 +3,9 @@
 - add `nonStrict` combinator ([#90](https://github.com/hoeck/simple-runtypes/pull/90))
   - `nonStrict` creates a non-strict `record` runtype from a provided `record` runtype
   - a non-strict `record` runtype will ignore keys that are not specified in the original runtype's typemap
-  - non-strict `record` runtypes will replace `sloppyRecord` runtypes
+- remove `sloppyRecord`
+  - replaced by `nonStrict`: `sloppyRecord(X)` -> `nonStrict(record(X))`
+  - fixes [#23](https://github.com/hoeck/simple-runtypes/issues/23)
 - fix: allow literal booleans as type-discriminators in discriminated unions, see [#98](https://github.com/hoeck/simple-runtypes/issues/98)
 
 ### 7.1.3
