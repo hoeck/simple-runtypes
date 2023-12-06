@@ -23,15 +23,16 @@ const stringRuntype = setupInternalRuntype<string>(
  *
  * Options:
  *
+ *   trim .. when true, remove leading and trailing spaces from the string
+ *           trimming is applied before the optional length and regex checks
  *   minLength .. reject strings that are shorter than that
  *   maxLength .. reject strings that are longer than that
- *   trim .. when true, remove leading and trailing spaces from the string
  *   match .. reject strings that do not match against provided RegExp
  */
 export function string(options?: {
+  trim?: boolean
   minLength?: number
   maxLength?: number
-  trim?: boolean
   match?: RegExp
 }): Runtype<string> {
   if (!options) {
@@ -44,11 +45,13 @@ export function string(options?: {
 
   return setupInternalRuntype(
     (v, failOrThrow) => {
-      const s: string = (stringRuntype as InternalRuntype<any>)(v, failOrThrow)
+      const r: string = (stringRuntype as InternalRuntype<any>)(v, failOrThrow)
 
-      if (isFail(s)) {
-        return propagateFail(failOrThrow, s, v)
+      if (isFail(r)) {
+        return propagateFail(failOrThrow, r, v)
       }
+
+      const s = trim ? r.trim() : r
 
       if (minLength !== undefined && s.length < minLength) {
         return createFail(
@@ -74,7 +77,7 @@ export function string(options?: {
         )
       }
 
-      return trim ? s.trim() : s
+      return s
     },
     { isPure },
   )

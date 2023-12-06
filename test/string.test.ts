@@ -1,4 +1,9 @@
-import { expectAcceptValuesPure, expectRejectValues, st } from './helpers'
+import {
+  expectAcceptValuesImpure,
+  expectAcceptValuesPure,
+  expectRejectValues,
+  st,
+} from './helpers'
 
 describe('string', () => {
   it('accepts strings', () => {
@@ -54,6 +59,44 @@ describe('string', () => {
     expect(rt('foO')).toEqual('foO')
   })
 
+  it('trims before it checks the string minLength', () => {
+    const rt = st.string({ trim: true, minLength: 1 })
+
+    expect(rt('a')).toEqual('a')
+    expectAcceptValuesImpure(
+      rt,
+      [
+        [' a', 'a'],
+        [' a   ', 'a'],
+        [' aa', 'aa'],
+        ['   a a ', 'a a'],
+      ],
+      true,
+    )
+
+    expectRejectValues(rt, ['       ', '  ', ' ', '', 0, []])
+  })
+
+  it('trims before it checks the string maxLength', () => {
+    const rt = st.string({ trim: true, maxLength: 3 })
+
+    expect(rt('abc')).toEqual('abc')
+    expectAcceptValuesImpure(
+      rt,
+      [
+        [' abc', 'abc'],
+        ['abc   ', 'abc'],
+        ['   a c ', 'a c'],
+        [' ', ''],
+        ['        ', ''],
+        ['a ', 'a'],
+      ],
+      true,
+    )
+
+    expectRejectValues(rt, ['abcd', 'abcd ', '  abcd   ', 'a  d ', 0, []])
+  })
+
   it('rejects non-strings', () => {
     expectRejectValues(
       st.string(),
@@ -72,5 +115,9 @@ describe('string', () => {
       [' 3a7ffb6', ' 3a7ffb61', '001122', 'X11aa22bb', '03A7ffb6'],
       'expected the string to match /^[0-9a-f]{8}$/',
     )
+  })
+
+  it('trims before applying match', () => {
+    const rt = st.string({ match: /^[0-9a-f]{8}$/ })
   })
 })

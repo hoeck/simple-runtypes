@@ -129,7 +129,7 @@ describe('nonStrict', () => {
     })
   })
 
-  // same as sloppyRecord
+  // same as the former sloppyRecord test
   it('ignores object attributes', () => {
     const runType = st.nonStrict(
       st.record({
