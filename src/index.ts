@@ -41,7 +41,7 @@ export { json } from './json'
 // containers
 export { tuple } from './tuple'
 export { array } from './array'
-export { record, sloppyRecord } from './record'
+export { record } from './record'
 export { dictionary } from './dictionary'
 
 // advanced / utility types
