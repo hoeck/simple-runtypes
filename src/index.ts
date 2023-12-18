@@ -3,6 +3,7 @@ export {
   getFormattedError,
   getFormattedErrorPath,
   getFormattedErrorValue,
+  isRuntypeError,
 } from './runtypeError'
 export {
   Fail,

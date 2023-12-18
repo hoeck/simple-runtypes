@@ -83,10 +83,14 @@ describe('error messages', () => {
     try {
       runtypeA({ a: 'foo', b: [{ point: [12, 13] }, { point: [12, null] }] })
     } catch (e) {
-      expect(st.getFormattedErrorPath(e)).toEqual('b[1].point[1]')
-      expect(st.getFormattedError(e)).toEqual(
-        'RuntypeError: expected a number at `<value>.b[1].point[1]` for `null`',
-      )
+      if (st.isRuntypeError(e)) {
+        expect(st.getFormattedErrorPath(e)).toEqual('b[1].point[1]')
+        expect(st.getFormattedError(e)).toEqual(
+          'RuntypeError: expected a number at `<value>.b[1].point[1]` for `null`',
+        )
+      } else {
+        throw e
+      }
     }
   })
 })

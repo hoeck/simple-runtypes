@@ -88,7 +88,22 @@ st.getFormattedError(FAIL)
 ```
 
 Not throwing errors is way more efficient and less obscure.
-Throwing errors and catching them outside is more convenient.
+
+Throwing errors and catching them outside is more convenient:
+
+```typescript
+try {
+  ... // code that uses runtypes
+} catch (e) {
+  if (st.isRuntypeError(e)) {
+    console.error(getFormattedError(e))
+
+    return
+  }
+
+  throw e
+}
+```
 
 ## Why?
 

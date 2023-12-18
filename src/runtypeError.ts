@@ -1,7 +1,5 @@
 import { RuntypeError, Fail } from './runtype'
 
-type RuntypeErrorInfo = RuntypeError | Fail
-
 /**
  * Turn an arbitrary object into a string of max length suitable for logging.
  */
@@ -32,20 +30,28 @@ export function debugValue(v: unknown, maxLength = 512): string {
 }
 
 /**
- * Return boolean to indicate whether passed object seems to be an RuntypeError
+ * Predicate for RuntypeError
  */
-function isRuntypeErrorPath(e: RuntypeErrorInfo): boolean {
-  return Array.isArray(e.path)
+export function isRuntypeError(e: unknown): e is RuntypeError {
+  if (typeof e !== 'object' || e === null) {
+    return false
+  }
+
+  if (!('path' in e) || !Array.isArray(e.path)) {
+    return false
+  }
+
+  if (!('reason' in e) || typeof e.reason !== 'string') {
+    return false
+  }
+
+  return true
 }
 
 /**
  * Return the object path at which the error occured.
  */
-export function getFormattedErrorPath(e: RuntypeErrorInfo): string {
-  if (!isRuntypeErrorPath(e)) {
-    return '(error is not a RuntypeError!)'
-  }
-
+export function getFormattedErrorPath(e: RuntypeError | Fail): string {
   // path in Fail objects is with the root-element at the end bc. its easier
   // to build it that way (just an [].push)
   const pathInRootElementFirstOrder = [...e.path].reverse()
@@ -71,13 +77,9 @@ export function getFormattedErrorPath(e: RuntypeErrorInfo): string {
  * Cap the size of the returned string at maxLength
  */
 export function getFormattedErrorValue(
-  e: RuntypeErrorInfo,
+  e: RuntypeError | Fail,
   maxLength = 512,
 ): string {
-  if (!isRuntypeErrorPath(e)) {
-    return '(error is not a RuntypeError!)'
-  }
-
   const { value: resolvedValue } = e.path.reduceRight(
     ({ value, isResolvable }, key) => {
       // we have not not been able to resolve the value previously - don't try any further
@@ -105,7 +107,7 @@ export function getFormattedErrorValue(
  * Cap the size of the returned string at maxLength
  */
 export function getFormattedError(
-  e: RuntypeErrorInfo,
+  e: RuntypeError | Fail,
   maxLength = 512,
 ): string {
   const rawPath = getFormattedErrorPath(e)
