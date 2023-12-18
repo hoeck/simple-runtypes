@@ -7,9 +7,7 @@ import { InternalRuntype, Runtype, RuntypeUsageError } from './runtype'
  *
  * This is the runtype counterpart to `Partial<T>`.
  */
-export function partial<T, K extends keyof T>(
-  original: Runtype<T>,
-): Runtype<Partial<T>> {
+export function partial<T>(original: Runtype<T>): Runtype<Partial<T>> {
   const fields = (original as InternalRuntype<any>).meta?.fields
   const isNonStrict = (original as InternalRuntype<any>).meta?.isNonStrict
 
