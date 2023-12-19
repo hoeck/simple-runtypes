@@ -28,7 +28,7 @@ describe('record', () => {
   it('accepts empty records', () => {
     const runType = st.record({})
 
-    const value: {} = runType({})
+    const value = runType({})
 
     expect(value).toEqual({})
   })
